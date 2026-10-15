@@ -14,3 +14,5 @@ A router Worker forwards to **one Durable Object per room** (`RoomDO`) and a sin
 ## Consequences
 
 No servers to manage and global edge placement. Cloudflare-specific APIs and a learning curve; fallback is a plain Node + `ws` process running the same `shared` simulation. Hibernation doesn't save money during a live game, so empty rooms must genuinely stop.
+
+The same Worker also serves the static client; see [0006](0006-single-worker-assets-and-api.md).

@@ -68,6 +68,8 @@ pnpm --filter @committee-snake/server cf-typegen   # regenerate Worker binding t
 
 ## Deploying
 
+Production is one Worker, `committee-snake` ([ADR 0006](docs/adr/0006-single-worker-assets-and-api.md)). It serves the built client from `apps/client/dist` as Workers Static Assets and runs the router only for `/room`, `/room/*`, `/public/*` and `/health`. Any other path is a static file, or `index.html` if no file matches. The live URL is `https://committee-snake.<your-subdomain>.workers.dev`. Deploy builds the client, then runs `wrangler deploy --env production` from `apps/server`; there is no separate Pages project.
+
 The Deploy workflow is skipped until you add the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets and set the repository variable `DEPLOY_ENABLED=true` (`gh variable set DEPLOY_ENABLED --body true`).
 
 ## Milestones

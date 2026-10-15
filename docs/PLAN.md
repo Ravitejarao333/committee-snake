@@ -216,9 +216,9 @@ Cost facts to plan around (from [Cloudflare's Durable Objects pricing page](http
 
 ```
             ┌───────────────────────────┐
- Browser ──►│  Static client (Pages)    │   HTML/JS/CSS, cached at edge
+ Browser ──►│  Static client (assets)   │   HTML/JS/CSS, cached at edge
             └───────────────────────────┘
-               │ wss://api.../room/:id
+               │ wss://<same origin>/room/:id
                ▼
             ┌───────────────────────────┐
             │  Router Worker            │   validates, routes by room id
