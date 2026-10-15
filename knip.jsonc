@@ -7,7 +7,9 @@
     },
     "apps/server": {
       // `cloudflare:workers` is a workerd runtime built-in, not an npm package.
-      "ignoreDependencies": ["cloudflare"]
+      // The client is never imported: it's listed so `pnpm -r build` builds
+      // apps/client/dist (the Worker's static assets) before the server.
+      "ignoreDependencies": ["cloudflare", "@committee-snake/client"]
     },
     "apps/client": { "entry": ["index.html"] }
   }

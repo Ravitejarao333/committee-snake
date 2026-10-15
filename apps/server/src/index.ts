@@ -18,6 +18,7 @@ function newRoomCode(): string {
 /**
  * Router Worker. Validates the request shape and forwards to the right
  * Durable Object. All game logic lives in RoomDO; this file stays dumb.
+ * Anything it doesn't route falls through to the static client (ADR 0006).
  */
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -48,6 +49,6 @@ export default {
       return env.LOBBY.get(id).fetch(request);
     }
 
-    return json({ error: "not found" }, 404);
+    return env.ASSETS.fetch(request);
   },
 } satisfies ExportedHandler<Env>;
