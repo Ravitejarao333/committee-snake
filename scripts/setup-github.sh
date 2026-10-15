@@ -19,10 +19,16 @@ pnpm install
 git add -A
 git commit -m "chore: bootstrap committee-snake monorepo" --no-verify || true
 
-echo "▶ Creating repo $OWNER/$REPO ($VISIBILITY)"
-gh repo create "$OWNER/$REPO" --"$VISIBILITY" --source=. --remote=origin --push \
-  --description "Classic phone Snake, except everyone votes on where it turns. Democracy was a mistake." \
-  --homepage "https://committee-snake.pages.dev"
+if gh repo view "$OWNER/$REPO" >/dev/null 2>&1; then
+  echo "▶ Repo $OWNER/$REPO already exists, pushing"
+  git remote get-url origin >/dev/null 2>&1 || git remote add origin "https://github.com/$OWNER/$REPO.git"
+  git push -u origin main
+else
+  echo "▶ Creating repo $OWNER/$REPO ($VISIBILITY)"
+  gh repo create "$OWNER/$REPO" --"$VISIBILITY" --source=. --remote=origin --push \
+    --description "Classic phone Snake, except everyone votes on where it turns. Democracy was a mistake." \
+    --homepage "https://committee-snake.pages.dev"
+fi
 
 echo "▶ Repo settings"
 gh repo edit "$OWNER/$REPO" \
