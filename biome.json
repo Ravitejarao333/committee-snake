@@ -16,7 +16,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "correctness": { "noUnusedImports": "error", "noUnusedVariables": "error" },
       "style": { "useConst": "error", "noNonNullAssertion": "warn" },
       "suspicious": { "noConsole": { "level": "warn", "options": { "allow": ["warn", "error"] } } }

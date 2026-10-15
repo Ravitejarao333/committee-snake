@@ -13,10 +13,14 @@ import {
  * repo has something playable on day one. Rendering, LCD effects, keypad and
  * the Blame Screen land in M1–M2 under src/render/ (see docs/PLAN.md §7).
  */
-const canvas = document.querySelector<HTMLCanvasElement>("#lcd");
-if (!canvas) throw new Error("missing #lcd canvas");
-const ctx = canvas.getContext("2d");
-if (!ctx) throw new Error("no 2d context");
+function mustCanvas(): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
+  const canvas = document.querySelector<HTMLCanvasElement>("#lcd");
+  if (!canvas) throw new Error("missing #lcd canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("no 2d context");
+  return { canvas, ctx };
+}
+const { canvas, ctx } = mustCanvas();
 ctx.imageSmoothingEnabled = false;
 
 const KEYS: Record<string, Dir> = {
@@ -44,11 +48,11 @@ let state: GameState = createGame(rng);
 let lastTick = performance.now();
 
 function draw(s: GameState): void {
-  const cw = canvas!.width / DEFAULT_RULES.width;
-  const ch = canvas!.height / DEFAULT_RULES.height;
-  const c = ctx!;
+  const cw = canvas.width / DEFAULT_RULES.width;
+  const ch = canvas.height / DEFAULT_RULES.height;
+  const c = ctx;
   c.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--lcd-bg");
-  c.fillRect(0, 0, canvas!.width, canvas!.height);
+  c.fillRect(0, 0, canvas.width, canvas.height);
   c.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--lcd-px");
   for (const [x, y] of s.snake) c.fillRect(x * cw + 1, y * ch + 1, cw - 2, ch - 2);
   const [fx, fy] = s.food;

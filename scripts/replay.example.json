@@ -1,0 +1,19 @@
+{
+  "seed": 42,
+  "rules": { "wrap": false },
+  "votes": [
+    { "alice": "U", "bob": "U", "carol": "R" },
+    { "alice": "U", "bob": "U", "carol": "D" },
+    { "alice": "U", "bob": "U", "carol": "D" },
+    { "alice": "U", "bob": "U", "carol": "D" },
+    { "alice": "U", "bob": "U", "carol": "D" },
+    { "alice": "U", "bob": "U", "carol": "D" },
+    { "alice": "U", "bob": "U", "carol": "D" },
+    { "alice": "U", "bob": "U", "carol": "D" },
+    { "alice": "U", "bob": "U", "carol": "D" },
+    { "alice": "U", "bob": "U", "carol": "D" },
+    { "alice": "U", "bob": "U", "carol": "D" },
+    { "alice": "L" },
+    { "alice": "L" }
+  ]
+}

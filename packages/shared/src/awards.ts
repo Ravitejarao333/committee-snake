@@ -49,11 +49,13 @@ export function pickAwards(
     }
     if (s.longestNapTicks > longestNap) [longestNap, nappers] = [s.longestNapTicks, [pid]];
   }
-  if (agreeable.length > 0) awards.push({ id: "agreeable", title: "Most Agreeable", players: agreeable });
+  if (agreeable.length > 0)
+    awards.push({ id: "agreeable", title: "Most Agreeable", players: agreeable });
   if (contrarian.length > 0 && worstAgree < bestAgree) {
     awards.push({ id: "contrarian", title: "The Contrarian", players: contrarian });
   }
-  if (longestNap >= 12) awards.push({ id: "napper", title: "Professional Napper", players: nappers });
+  if (longestNap >= 12)
+    awards.push({ id: "napper", title: "Professional Napper", players: nappers });
 
   return awards.slice(0, 3);
 }
@@ -74,13 +76,14 @@ const CAPTIONS: Record<string, string[]> = {
 };
 
 export function pickCaption(ctx: CaptionContext, pick: (n: number) => number): string {
-  const key = ctx.mode === "chaos"
-    ? "chaos"
-    : ctx.chasingBonus
-      ? "bonus"
-      : ctx.cause === "wall" && ctx.length < 5
-        ? "wall-short"
-        : ctx.cause;
+  const key =
+    ctx.mode === "chaos"
+      ? "chaos"
+      : ctx.chasingBonus
+        ? "bonus"
+        : ctx.cause === "wall" && ctx.length < 5
+          ? "wall-short"
+          : ctx.cause;
   const list = CAPTIONS[key] ?? CAPTIONS.wall ?? [];
   return list[pick(list.length)] ?? "Game over.";
 }

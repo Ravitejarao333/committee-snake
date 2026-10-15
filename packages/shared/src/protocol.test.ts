@@ -3,8 +3,11 @@ import { MAX_CLIENT_MESSAGE_BYTES, parseClientMessage, ROOM_CODE_RE } from "./pr
 
 describe("parseClientMessage", () => {
   it("accepts valid messages", () => {
-    expect(parseClientMessage(JSON.stringify({ t: "vote", d: "U" }))).toEqual({ t: "vote", d: "U" });
-    expect(parseClientMessage(JSON.stringify({ t: "hello", name: "SleepyCobra42" }))).toMatchObject({
+    expect(parseClientMessage(JSON.stringify({ t: "vote", d: "U" }))).toEqual({
+      t: "vote",
+      d: "U",
+    });
+    expect(parseClientMessage(JSON.stringify({ t: "hello", name: "SleepyCobra4" }))).toMatchObject({
       t: "hello",
     });
   });
