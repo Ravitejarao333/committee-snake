@@ -1,0 +1,23 @@
+name: Feature request
+description: A new mode, caption, award, or anything that makes the committee funnier
+labels: [enhancement, triage]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it makes the game funnier or better
+      description: The bar for v1 is "no brainer, fun, makes people laugh". See docs/PLAN.md §9 for what's parked for v2.
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: I checked docs/PLAN.md and this isn't already planned or explicitly deferred

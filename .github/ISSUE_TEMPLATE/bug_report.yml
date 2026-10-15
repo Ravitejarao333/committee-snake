@@ -1,0 +1,42 @@
+name: Bug report
+description: Something is broken (not "the committee made a bad decision")
+labels: [bug, triage]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a private room with 3 players
+        2. Vote LEFT while heading RIGHT
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: room
+    attributes:
+      label: Room code / round seed (if shown on the Blame Screen)
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options: [Chrome, Firefox, Safari, Edge, Android Chrome, iOS Safari, Other]
+    validations:
+      required: true
+  - type: input
+    id: screen
+    attributes:
+      label: Screen size / device
+      placeholder: 1366×768 laptop, Pixel 7, ...
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output / screenshots
+      render: shell

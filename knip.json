@@ -1,0 +1,10 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": { "entry": ["vitest.config.ts", "commitlint.config.js"] },
+    "packages/shared": { "entry": ["src/index.ts"] },
+    "apps/server": { "entry": ["src/index.ts"] },
+    "apps/client": { "entry": ["src/main.ts", "index.html"] }
+  },
+  "ignoreDependencies": ["@commitlint/config-conventional"]
+}
