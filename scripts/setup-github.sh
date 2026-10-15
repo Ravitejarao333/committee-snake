@@ -52,7 +52,6 @@ gh api -X POST "repos/$OWNER/$REPO/rulesets" --input - <<JSON >/dev/null
     { "type": "deletion" },
     { "type": "non_fast_forward" },
     { "type": "required_linear_history" },
-    { "type": "required_signatures" },
     {
       "type": "pull_request",
       "parameters": {
