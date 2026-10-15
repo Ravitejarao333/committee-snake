@@ -45,6 +45,24 @@ Biome handles formatting and linting; don't argue with it, run `pnpm lint:fix`. 
 - Bugs get a regression test that replays the failing `(seed, votes)` pair.
 - Run `pnpm test:watch` while working on the sim; it's fast.
 
+## Working with Claude Code
+
+The repo ships project config in `.claude/` (personal overrides go in the git-ignored `.claude/settings.local.json`). Agents still follow [CLAUDE.md](CLAUDE.md).
+
+- **Hooks** (`.claude/settings.json`, scripts in `.claude/hooks/`)
+  - After every Edit/Write: `biome check --write` on that one file. Non-blocking; anything Biome can't fix is fed back to Claude.
+  - On Stop: `pnpm typecheck && pnpm test`. If red, Claude is sent back to fix it once; if it is still red after that, you get a warning instead of a loop.
+- **Permissions:** `pnpm`, `git`, `gh` and `npx wrangler` run without prompting. `rm -rf` and reading `.dev.vars` / `.env*` are denied.
+- **Subagents** (`.claude/agents/`), each restricted to its own package:
+  - `sim-engineer`: `packages/shared` only; every rule change ships with a Vitest test; keeps the sim pure.
+  - `cf-engineer`: `apps/server`; Durable Objects, Hibernation API, alarms, `wrangler.jsonc`; no game rules; validates with `parseClientMessage`.
+  - `client-engineer`: `apps/client`; Canvas 2D, integer pixel scaling, `prefers-reduced-motion`, no frameworks.
+  - `reviewer`: read-only; reviews a diff against CLAUDE.md, PLAN.md and the ADRs and returns a prioritized list.
+- **Skills** (`.claude/skills/`, run as `/name`):
+  - `/verify`: `pnpm check` + coverage + `pnpm build` + `pnpm knip` with a summary table. This is the definition of done.
+  - `/replay <log.json>`: replays a `(seed, votes)` log through the real sim (`pnpm replay`, i.e. `scripts/replay.ts`) and prints every tick, the death cause and the board. See `scripts/replay.example.json`.
+  - `/adr <title>`: creates the next-numbered ADR from the template and adds it to `docs/adr/README.md`.
+
 ## Releasing
 
 Nothing manual. Merge to `main` → `release-please` opens/updates a release PR → merging that PR tags a version and publishes a GitHub Release. The `Deploy` workflow ships `main` to Cloudflare after CI passes.

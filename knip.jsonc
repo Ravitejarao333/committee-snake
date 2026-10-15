@@ -1,6 +1,10 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "workspaces": {
+    ".": {
+      // CLI scripts and Claude Code hooks are run directly, never imported.
+      "entry": ["scripts/*.ts", ".claude/hooks/*.mjs"]
+    },
     "apps/server": {
       // `cloudflare:workers` is a workerd runtime built-in, not an npm package.
       "ignoreDependencies": ["cloudflare"]

@@ -18,6 +18,9 @@ coverage/
 .dev.vars
 .dev.vars.*
 
+# Claude Code personal overrides (.claude/settings.json is shared)
+.claude/settings.local.json
+
 # Editors / OS
 .DS_Store
 .idea/
