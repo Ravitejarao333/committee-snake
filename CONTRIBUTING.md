@@ -51,8 +51,11 @@ The repo ships project config in `.claude/` (personal overrides go in the git-ig
 
 - **Hooks** (`.claude/settings.json`, scripts in `.claude/hooks/`)
   - After every Edit/Write: `biome check --write` on that one file. Non-blocking; anything Biome can't fix is fed back to Claude.
-  - On Stop: `pnpm typecheck && pnpm test`. If red, Claude is sent back to fix it once; if it is still red after that, you get a warning instead of a loop.
-- **Permissions:** `pnpm`, `git`, `gh` and `npx wrangler` run without prompting. `rm -rf` and reading `.dev.vars` / `.env*` are denied.
+  - On Stop: `pnpm typecheck && pnpm test`. If red, Claude is sent back to fix it once; if it is still red after that, you get a warning instead of a loop. Skipped (<100 ms) when the tree is clean and HEAD is the tree last verified green (marker in `.git/claude-stop-hook.green`).
+- **Permissions:** `pnpm`, `git`, `gh` and `npx wrangler` run without prompting. Denied (deny beats allow):
+  - `rm -rf`, and reading `.dev.vars` / `.env*` with Read or `cat`.
+  - `git push --force` / `-f`. These are matched as whole words, so `--force-with-lease` is still allowed.
+  - `git reset --hard`, `git checkout -- <path>` and `git clean`, which throw away uncommitted work.
 - **Subagents** (`.claude/agents/`), each restricted to its own package:
   - `sim-engineer`: `packages/shared` only; every rule change ships with a Vitest test; keeps the sim pure.
   - `cf-engineer`: `apps/server`; Durable Objects, Hibernation API, alarms, `wrangler.jsonc`; no game rules; validates with `parseClientMessage`.
