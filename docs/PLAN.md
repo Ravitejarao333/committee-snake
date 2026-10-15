@@ -174,7 +174,7 @@ A **Share** button exports the Blame Screen as a PNG via `canvas.toBlob()` and u
 
 ## 4. Player identity
 
-- **No accounts in v1.** On first visit: pick a nickname (3–12 chars, `[a-zA-Z0-9_]`) or accept a random one ("SleepyCobra42").
+- **No accounts in v1.** On first visit: pick a nickname (3–12 chars, `[a-zA-Z0-9_]`) or accept a random one ("SleepyCobra4"; generated names must also be ≤12 chars).
 - Server-side **profanity filter** on nicknames (word list + leetspeak normalisation). Rejected names silently become a random one.
 - **Avatar:** a 7×7 pixel face generated deterministically from a hash of the player id (like GitHub identicons, but LCD style).
 - A **session token** (random 128-bit, stored in `localStorage`) lets you reconnect within 30s and keep your seat and stats. (Fine on your own hosted site; it's only artifact sandboxes that restrict storage.)
