@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-/** Hard cap on any client message; anything bigger is dropped unread. */
+/**
+ * Hard cap on any client message; anything bigger is dropped unread. The byte cap
+ * is enforced server-side (apps/server `withinByteCap`, UTF-8 via TextEncoder);
+ * `parseClientMessage` below only applies it to string length as a cheap first gate.
+ */
 export const MAX_CLIENT_MESSAGE_BYTES = 512;
 export const MAX_VOTERS = 24;
 export const VOTE_EXPIRY_MS = 4_000;
