@@ -2,7 +2,25 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": ["Bash(pnpm *)", "Bash(git *)", "Bash(gh *)", "Bash(npx wrangler *)"],
-    "deny": ["Bash(rm -rf *)", "Read(.dev.vars)", "Read(**/.dev.vars*)", "Read(**/.env*)"]
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force)",
+      "Bash(git push --force *)",
+      "Bash(git push * --force)",
+      "Bash(git push * --force *)",
+      "Bash(git push -f)",
+      "Bash(git push -f *)",
+      "Bash(git push * -f)",
+      "Bash(git push * -f *)",
+      "Bash(git reset --hard*)",
+      "Bash(git checkout -- *)",
+      "Bash(git clean*)",
+      "Bash(cat *.dev.vars*)",
+      "Bash(cat *.env*)",
+      "Read(.dev.vars)",
+      "Read(**/.dev.vars*)",
+      "Read(**/.env*)"
+    ]
   },
   "hooks": {
     "PostToolUse": [

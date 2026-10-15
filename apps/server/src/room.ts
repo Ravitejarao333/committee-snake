@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { parseClientMessage } from "@committee-snake/shared";
 import type { Env } from "./env";
+import { withinByteCap } from "./limits";
 
 /**
  * One Room = one snake = one tick loop = one source of truth.
@@ -21,8 +22,9 @@ export class RoomDO extends DurableObject<Env> {
   }
 
   override async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer): Promise<void> {
+    if (!withinByteCap(raw)) return; // over 512 UTF-8 bytes: drop unparsed (§6.6)
     const msg = parseClientMessage(raw);
-    if (!msg) return; // malformed / oversized: drop silently (§6.6)
+    if (!msg) return; // malformed: drop silently (§6.6)
     switch (msg.t) {
       case "ping":
         ws.send(JSON.stringify({ t: "pong", c: msg.c, s: Date.now() }));

@@ -47,7 +47,7 @@ scripts/           setup-github.sh (one-time repo bootstrap)
 
 ## Getting started
 
-Requires **Node 24** (see `.nvmrc`) and **pnpm** (`corepack enable` gives you the pinned version).
+Requires **Node 24** (see `.nvmrc`; the minimum is **22.15**, because `scripts/replay.ts` uses `module.registerHooks`) and **pnpm** (`corepack enable` gives you the pinned version).
 
 ```bash
 pnpm install          # also installs git hooks via husky
@@ -65,6 +65,10 @@ pnpm lint:fix                    # Biome auto-fix + import sorting
 pnpm knip                        # unused files/exports/deps
 pnpm --filter @committee-snake/server cf-typegen   # regenerate Worker binding types
 ```
+
+## Deploying
+
+The Deploy workflow is skipped until you add the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets and set the repository variable `DEPLOY_ENABLED=true` (`gh variable set DEPLOY_ENABLED --body true`).
 
 ## Milestones
 
