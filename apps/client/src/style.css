@@ -1,0 +1,25 @@
+:root {
+  --lcd-bg: #c7f0d8;
+  --lcd-px: #43523d;
+  color-scheme: light;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #1b1d1a;
+  color: var(--lcd-bg);
+  font-family: ui-monospace, Menlo, monospace;
+}
+#lcd {
+  image-rendering: pixelated;
+  background: var(--lcd-bg);
+  width: min(90vw, 960px);
+  aspect-ratio: 32 / 20;
+  height: auto;
+}
+.hint {
+  opacity: 0.7;
+  font-size: 0.85rem;
+}
