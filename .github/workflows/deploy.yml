@@ -4,6 +4,8 @@ name: Deploy
 # to main after CI passes. Needs repository secrets:
 #   CLOUDFLARE_API_TOKEN  (Workers Scripts:Edit, Pages:Edit, Account:Read)
 #   CLOUDFLARE_ACCOUNT_ID
+# The job is skipped (not failed) until the repository variable
+# DEPLOY_ENABLED is set to "true".
 on:
   workflow_run:
     workflows: [CI]
@@ -21,7 +23,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ vars.DEPLOY_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     environment:
       name: production
