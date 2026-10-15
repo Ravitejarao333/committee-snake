@@ -1,5 +1,13 @@
 import type { Rng } from "./rng";
-import { DIRS, type Dir, type Mode, OPPOSITE, type PlayerId, type Tally, type VoteMap } from "./types";
+import {
+  DIRS,
+  type Dir,
+  type Mode,
+  OPPOSITE,
+  type PlayerId,
+  type Tally,
+  type VoteMap,
+} from "./types";
 
 /**
  * Count standing votes and pick the direction for this tick.

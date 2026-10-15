@@ -18,7 +18,12 @@ export interface StepResult {
 const sameCell = (a: Cell, b: Cell): boolean => a[0] === b[0] && a[1] === b[1];
 
 /** Pick a random empty cell, not within `margin` cells of the head. */
-export function spawnCell(state: Pick<GameState, "snake">, rules: Rules, rng: Rng, margin = 2): Cell {
+export function spawnCell(
+  state: Pick<GameState, "snake">,
+  rules: Rules,
+  rng: Rng,
+  margin = 2,
+): Cell {
   const head = state.snake[0];
   const occupied = new Set(state.snake.map(([x, y]) => y * rules.width + x));
   const free: Cell[] = [];

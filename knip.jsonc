@@ -1,0 +1,10 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    "apps/server": {
+      // `cloudflare:workers` is a workerd runtime built-in, not an npm package.
+      "ignoreDependencies": ["cloudflare"]
+    },
+    "apps/client": { "entry": ["index.html"] }
+  }
+}

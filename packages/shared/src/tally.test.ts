@@ -7,10 +7,10 @@ const votes = (entries: Record<PlayerId, Dir>) => new Map(Object.entries(entries
 
 describe("tally – democracy", () => {
   it("majority wins", () => {
-    const t = tally(votes({ a: "U", b: "U", c: "L" }), "R", "democracy", mulberry32(1));
+    const t = tally(votes({ a: "U", b: "U", c: "D" }), "R", "democracy", mulberry32(1));
     expect(t.winner).toBe("U");
     expect(t.winners).toEqual(["a", "b"]);
-    expect(t.counts).toEqual({ U: 2, D: 0, L: 1, R: 0 });
+    expect(t.counts).toEqual({ U: 2, D: 1, L: 0, R: 0 });
   });
 
   it("reverse votes never count and are reported as nonsense", () => {

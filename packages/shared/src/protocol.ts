@@ -13,7 +13,11 @@ export const DirSchema = z.enum(["U", "D", "L", "R"]);
 export const ModeSchema = z.enum(["democracy", "chaos"]);
 
 export const ClientMessage = z.discriminatedUnion("t", [
-  z.object({ t: z.literal("hello"), token: z.string().max(64).optional(), name: z.string().regex(NICKNAME_RE) }),
+  z.object({
+    t: z.literal("hello"),
+    token: z.string().max(64).optional(),
+    name: z.string().regex(NICKNAME_RE),
+  }),
   z.object({ t: z.literal("vote"), d: DirSchema }),
   z.object({ t: z.literal("emote"), e: z.number().int().min(0).max(5) }),
   z.object({ t: z.literal("start") }),
@@ -48,7 +52,16 @@ export const ServerMessage = z.discriminatedUnion("t", [
     v: z.object({ U: z.number(), D: z.number(), L: z.number(), R: z.number(), X: z.number() }),
     who: z.record(z.string(), DirSchema),
   }),
-  z.object({ t: z.literal("death"), n: z.number().int(), cause: z.enum(["wall", "self"]), fatalDir: DirSchema, seed: z.number(), caption: z.string(), awards: z.array(z.unknown()), tally: z.unknown() }),
+  z.object({
+    t: z.literal("death"),
+    n: z.number().int(),
+    cause: z.enum(["wall", "self"]),
+    fatalDir: DirSchema,
+    seed: z.number(),
+    caption: z.string(),
+    awards: z.array(z.unknown()),
+    tally: z.unknown(),
+  }),
   z.object({ t: z.literal("roster"), players: z.array(z.unknown()) }),
   z.object({ t: z.literal("emote"), p: z.string(), e: z.number().int() }),
   z.object({ t: z.literal("pong"), c: z.number(), s: z.number() }),
