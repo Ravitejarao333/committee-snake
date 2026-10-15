@@ -1,8 +1,9 @@
 name: Deploy
 
-# Deploys the Worker (API) and the static client to Cloudflare on every push
-# to main after CI passes. Needs repository secrets:
-#   CLOUDFLARE_API_TOKEN  (Workers Scripts:Edit, Pages:Edit, Account:Read)
+# Deploys the single committee-snake Worker (API + static client as Workers
+# Static Assets, ADR 0006) on every push to main after CI passes. Needs
+# repository secrets:
+#   CLOUDFLARE_API_TOKEN  (Workers Scripts:Edit, Account:Read)
 #   CLOUDFLARE_ACCOUNT_ID
 # The job is skipped (not failed) until the repository variable
 # DEPLOY_ENABLED is set to "true".
@@ -38,17 +39,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @committee-snake/client build
 
-      - name: Deploy Worker
+      # The Worker uploads apps/client/dist as its static assets, so the
+      # client build above must run first.
+      - name: Deploy Worker + assets
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/server
           command: deploy --env production
-
-      - name: Deploy client (Pages)
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy apps/client/dist --project-name=committee-snake --branch=main
