@@ -59,6 +59,18 @@ export type DeathCause = "wall" | "self";
 /** Live votes: player -> direction. Expired votes are removed before calling `step`. */
 export type VoteMap = ReadonlyMap<PlayerId, Dir>;
 
+/** A standing vote plus when it was cast, in the caller's clock (ms). */
+export interface StampedVote {
+  dir: Dir;
+  at: number;
+}
+
+/** Result of `expireVotes`: votes still counting, and who has gone grey. */
+export interface LiveVotes {
+  live: VoteMap;
+  napping: ReadonlySet<PlayerId>;
+}
+
 export interface Tally {
   counts: Record<Dir, number>;
   /** Votes for the reverse direction, shown as "nonsense" and never counted. */
