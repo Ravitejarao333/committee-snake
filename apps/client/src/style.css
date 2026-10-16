@@ -1,25 +1,385 @@
 :root {
+  /* LCD: the only two colours on the game screen (docs/PLAN.md §2.1). */
   --lcd-bg: #c7f0d8;
   --lcd-px: #43523d;
-  color-scheme: light;
+  /* Original candybar: graphite plastic, rubber keys. */
+  --page: #1b1d1a;
+  --body-hi: #4a5560;
+  --body: #2f373f;
+  --body-lo: #1d2329;
+  --bezel: #12161a;
+  --key: #d5d9d0;
+  --key-lo: #a9aea4;
+  --key-ink: #2a2f2b;
+  --font-px: "Press Start 2P", ui-monospace, monospace;
+  --key-h: clamp(30px, 5.2vh, 46px);
+  --key-gap: 5px;
+  /* Vertical chrome around the LCD slot on desktop (page margin, earpiece, bezel, status, keypad, chin). */
+  --chrome-v: calc(16px + 24px + 24px + 22px + 4 * var(--key-h) + 3 * var(--key-gap) + 12px + 18px);
+  color-scheme: dark;
 }
+
+* {
+  box-sizing: border-box;
+}
+
+html,
 body {
   margin: 0;
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
   display: grid;
   place-items: center;
-  background: #1b1d1a;
+  background: radial-gradient(ellipse at 50% 30%, #262a25 0%, var(--page) 70%);
   color: var(--lcd-bg);
   font-family: ui-monospace, Menlo, monospace;
+  -webkit-tap-highlight-color: transparent;
 }
-#lcd {
-  image-rendering: pixelated;
+
+#app {
+  display: contents;
+}
+
+/* ---------- Phone body (desktop) ---------- */
+
+.phone {
+  --slot-h: max(220px, calc(100dvh - var(--chrome-v)));
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: min(calc(100vw - 32px), calc(var(--slot-h) * 32 / 22 + 68px));
+  height: calc(100dvh - 16px);
+  padding: 0 22px;
+  border-radius: 56px 56px 72px 72px / 44px 44px 96px 96px;
+  background:
+    linear-gradient(100deg, transparent 0 18%, rgb(255 255 255 / 0.05) 24%, transparent 34%),
+    linear-gradient(
+      180deg,
+      var(--body-hi) 0%,
+      var(--body) 14%,
+      var(--body) 80%,
+      var(--body-lo) 100%
+    );
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.12),
+    inset 0 -3px 6px rgb(0 0 0 / 0.45),
+    0 18px 40px rgb(0 0 0 / 0.55);
+}
+
+.earpiece {
+  flex: 0 0 24px;
+  display: grid;
+  place-items: center;
+}
+.earpiece::before {
+  content: "";
+  width: 84px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--body-lo);
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.8),
+    0 1px 0 rgb(255 255 255 / 0.08);
+}
+
+.bezel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  padding: 12px;
+  border-radius: 20px 20px 28px 28px;
+  background: var(--bezel);
+  box-shadow:
+    inset 0 2px 6px rgb(0 0 0 / 0.9),
+    0 1px 0 rgb(255 255 255 / 0.1);
+}
+
+.screen {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 6px;
+  overflow: hidden;
   background: var(--lcd-bg);
-  width: min(90vw, 960px);
-  aspect-ratio: 32 / 20;
-  height: auto;
+  box-shadow: inset 0 0 14px rgb(67 82 61 / 0.35);
 }
-.hint {
+
+.status {
+  flex: 0 0 22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  color: var(--lcd-px);
+  font: 8px / 1 var(--font-px);
+  user-select: none;
+}
+.signal {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 9px;
+}
+.signal i {
+  width: 3px;
+  background: currentColor;
+}
+.signal i:nth-child(1) {
+  height: 3px;
+}
+.signal i:nth-child(2) {
+  height: 5px;
+}
+.signal i:nth-child(3) {
+  height: 7px;
+}
+.signal i:nth-child(4) {
+  height: 9px;
+}
+.mute {
+  margin-left: auto;
+  display: inline-flex;
+}
+.glyph {
+  width: 18px;
+  height: 14px;
+  fill: currentColor;
+}
+.glyph .off,
+.is-muted .glyph .on {
+  display: none;
+}
+.is-muted .glyph .off {
+  display: inline;
+}
+.battery {
+  position: relative;
+  width: 18px;
+  height: 9px;
+  border: 1px solid currentColor;
+  padding: 1px;
+}
+.battery::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: 2px;
+  width: 2px;
+  height: 3px;
+  background: currentColor;
+}
+.battery i {
+  display: block;
+  height: 100%;
+  width: 0;
+  min-width: 1px;
+  background: currentColor;
+}
+
+.lcd-slot {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#lcd {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  display: block;
+  image-rendering: pixelated;
+}
+
+/* ---------- Keypad ---------- */
+
+.keypad {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--key-gap) 10px;
+  width: min(100%, 380px);
+  margin: 12px auto 0;
+}
+
+.key {
+  position: relative;
+  height: var(--key-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 40% 40% 46% 46% / 50% 50% 60% 60%;
+  background: linear-gradient(180deg, #e9ece4 0%, var(--key) 45%, var(--key-lo) 100%);
+  color: var(--key-ink);
+  box-shadow:
+    0 2px 0 #6d7269,
+    0 3px 4px rgb(0 0 0 / 0.5);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition:
+    background-color 60ms,
+    box-shadow 60ms,
+    transform 60ms;
+}
+.key-d {
+  font: 14px / 1 var(--font-px);
+}
+.key-l {
+  font:
+    600 9px / 1 ui-monospace,
+    Menlo,
+    monospace;
+  letter-spacing: 0.08em;
   opacity: 0.7;
-  font-size: 0.85rem;
+}
+.key-inert {
+  cursor: default;
+}
+.key[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Direction hint on the vote keys. */
+.key[data-key="2"]::after,
+.key[data-key="4"]::after,
+.key[data-key="6"]::after,
+.key[data-key="8"]::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 5px;
+  background: currentColor;
+  opacity: 0.45;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.key[data-key="2"]::after {
+  top: 4px;
+}
+.key[data-key="8"]::after {
+  bottom: 4px;
+  transform: rotate(180deg);
+}
+.key[data-key="4"]::after {
+  left: 8px;
+  transform: rotate(-90deg);
+}
+.key[data-key="6"]::after {
+  right: 8px;
+  transform: rotate(90deg);
+}
+
+.key.lit {
+  background: var(--lcd-bg);
+  color: var(--lcd-px);
+  transform: translateY(2px);
+  box-shadow:
+    0 0 0 #6d7269,
+    0 0 14px rgb(199 240 216 / 0.55);
+}
+
+.key:focus-visible {
+  outline: 2px solid var(--lcd-bg);
+  outline-offset: 3px;
+}
+
+.chin {
+  flex: 0 0 18px;
+  display: grid;
+  place-items: center;
+}
+.chin::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--body-lo);
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.8);
+}
+
+/* ---------- Narrow screens: no phone frame, just LCD + 2/4/6/8 ---------- */
+
+@media (max-width: 999px) {
+  body {
+    place-items: stretch;
+    background: var(--page);
+  }
+  .phone {
+    width: 100vw;
+    height: 100dvh;
+    padding: 0 0 max(12px, env(safe-area-inset-bottom));
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .earpiece,
+  .chin {
+    display: none;
+  }
+  .bezel {
+    flex: 0 1 auto;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .screen {
+    border-radius: 0;
+    padding-top: env(safe-area-inset-top);
+  }
+  .lcd-slot {
+    flex: 0 1 auto;
+    height: min(calc(100vw * 22 / 32), calc(100dvh - 22px - 4 * 64px - 3 * 8px - 48px));
+  }
+  .keypad {
+    --key-h: 64px;
+    --key-gap: 8px;
+    width: min(100% - 24px, 340px);
+    /* Centred in the space left under the LCD, so there's no dead gap. */
+    margin: auto;
+  }
+  .key-d {
+    font-size: 18px;
+  }
+  .key:not([data-key="2"], [data-key="4"], [data-key="6"], [data-key="8"], [data-key="*"]) {
+    visibility: hidden;
+  }
+}
+
+/* Phones held sideways: LCD left, keypad right. */
+@media (max-width: 999px) and (orientation: landscape) and (max-height: 520px) {
+  .phone {
+    flex-direction: row;
+    align-items: center;
+    padding: 0 max(12px, env(safe-area-inset-right)) 0 0;
+    gap: 12px;
+  }
+  .bezel {
+    flex: 1 1 auto;
+    align-self: stretch;
+  }
+  .lcd-slot {
+    flex: 1 1 auto;
+    height: auto;
+  }
+  .keypad {
+    --key-h: calc((100dvh - 3 * 6px - 24px) / 4);
+    --key-gap: 6px;
+    width: min(38vw, 260px);
+    margin: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .key {
+    transition: none;
+  }
 }
