@@ -6,13 +6,15 @@ import {
   mulberry32,
   nextTickDelayMs,
   type PlayerId,
+  pushVote,
   type Rng,
-  type StampedVote,
+  settleVotes,
   step,
+  type VoteQueue,
 } from "@committee-snake/shared";
 import type { Audio } from "./audio";
 import type { InputHandlers } from "./input";
-import type { KeyAction } from "./keymap";
+import { KEYPAD_FOR_DIR, type KeyAction } from "./keymap";
 import {
   advance,
   canStart,
@@ -28,6 +30,7 @@ import type { LcdLayout } from "./render/layout";
 import { type Afterimage, drawHud, type Lcd, type Motion, type Overlay } from "./render/lcd";
 import type { Phone } from "./render/phone";
 import { type BoardView, drawBoard, segmentSprite } from "./render/snake";
+import { runDueTicks } from "./scheduler";
 
 /** Shape of the dev-only smoke-test hook (stripped from production builds). */
 interface CsDevHook {
@@ -50,8 +53,6 @@ declare global {
 }
 
 const ME: PlayerId = "you";
-/** Ticks run per frame at most, so a stalled frame can't fast-forward the snake. */
-const MAX_CATCH_UP = 3;
 const BLINK_PROMPT_MS = 600;
 
 /** Lobby attract screen: a still snake about to bite. */
@@ -92,7 +93,7 @@ export function createDriver(lcd: Lcd, phone: Phone, audio: Audio): Driver {
   let state: GameState | null = null;
   // One mulberry32 stream per round, used only by createGame/step (ADR 0005).
   let rng: Rng = mulberry32(0);
-  const votes = new Map<PlayerId, StampedVote>();
+  let votes = new Map<PlayerId, VoteQueue>();
   let nextTickAt = 0;
   let napping = false;
   let paused = false;
@@ -104,20 +105,31 @@ export function createDriver(lcd: Lcd, phone: Phone, audio: Audio): Driver {
     dirty = true;
   });
 
+  /** Light the keypad for the live head, and dimly for the queued press (ADR 0007). */
+  const showVotes = (): void => {
+    const q = state?.alive && !napping ? votes.get(ME) : undefined;
+    phone.showVotes(
+      q ? KEYPAD_FOR_DIR[q.head.dir] : null,
+      q?.pending ? KEYPAD_FOR_DIR[q.pending.dir] : null,
+    );
+  };
+
   const start = (now: number): void => {
     rng = mulberry32(freshSeed());
     state = createGame(rng);
-    votes.clear();
+    votes = new Map();
     napping = false;
     afterimage = null;
     phase = countdown(now);
     dirty = true;
+    showVotes();
   };
 
   const tick = (s: GameState, now: number): void => {
     const live = expireVotes(votes, now);
     const { state: next, events } = step(s, live.live, rng);
     state = next;
+    votes = settleVotes(votes, next.dir);
     napping = live.napping.has(ME);
     for (const e of events) {
       if (e.kind === "turn") audio.play("turn");
@@ -136,6 +148,7 @@ export function createDriver(lcd: Lcd, phone: Phone, audio: Audio): Driver {
         ? { cell: tail, bitmap: segmentSprite(s, last, false), at: now }
         : null;
     dirty = true;
+    showVotes();
   };
 
   const action = (a: KeyAction, repeat: boolean): void => {
@@ -149,11 +162,12 @@ export function createDriver(lcd: Lcd, phone: Phone, audio: Audio): Driver {
     }
     if (!repeat && canStart(phase)) start(now);
     if (a.kind !== "vote") return;
-    votes.set(ME, { dir: a.dir, at: now });
+    votes.set(ME, pushVote(votes.get(ME), { dir: a.dir, at: now }));
     if (napping) {
       napping = false;
       dirty = true;
     }
+    showVotes();
     if (!repeat) audio.play("vote");
   };
 
@@ -188,12 +202,12 @@ export function createDriver(lcd: Lcd, phone: Phone, audio: Audio): Driver {
       if (phase.name === "playing" && state) nextTickAt = phase.since + nextTickDelayMs(state);
       if (phase.name === "over") audio.play("dun");
     }
-    if (phase.name === "playing" && !paused && state) {
-      if (now - nextTickAt > 1000) nextTickAt = now;
-      for (let i = 0; i < MAX_CATCH_UP && phase.name === "playing" && now >= nextTickAt; i++) {
+    if (phase.name === "playing" && !paused) {
+      nextTickAt = runDueTicks(nextTickAt, now, () => {
+        if (phase.name !== "playing" || !state) return null;
         tick(state, now);
-        nextTickAt += nextTickDelayMs(state);
-      }
+        return nextTickDelayMs(state);
+      });
     }
     const visible = visibleAt(phase, now);
     if (visible !== lastVisible) {

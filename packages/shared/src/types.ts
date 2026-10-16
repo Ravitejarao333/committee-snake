@@ -65,6 +65,20 @@ export interface StampedVote {
   at: number;
 }
 
+/**
+ * A player's two-deep vote queue (ADR 0007). `head` is the vote `tally` sees; `pending` takes over
+ * once the head has won a tick, so two quick presses become two consecutive turns.
+ */
+export interface VoteQueue {
+  head: StampedVote;
+  pending: StampedVote | null;
+  /**
+   * The head has already won, or is the reverse of the direction taken and can't win next tick.
+   * It still counts as a standing vote, but the next press replaces it instead of queuing behind it.
+   */
+  stale: boolean;
+}
+
 /** Result of `expireVotes`: votes still counting, and who has gone grey. */
 export interface LiveVotes {
   live: VoteMap;

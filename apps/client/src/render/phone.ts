@@ -8,6 +8,8 @@ export interface Phone {
   readonly slot: HTMLElement;
   readonly keypad: HTMLElement;
   light(key: string, on: boolean): void;
+  /** Mark the key of the live vote, and dimly the queued one (null clears). */
+  showVotes(head: string | null, pending: string | null): void;
   setMuted(muted: boolean): void;
   setCapacity(n: number, max: number): void;
 }
@@ -91,6 +93,12 @@ export function createPhone(app: HTMLElement): Phone {
     keypad,
     light(key, on) {
       buttons.get(key)?.classList.toggle("lit", on);
+    },
+    showVotes(head, pending) {
+      for (const [k, b] of buttons) {
+        b.classList.toggle("vote-head", k === head);
+        b.classList.toggle("vote-pending", k === pending);
+      }
     },
     setMuted(muted) {
       mute.classList.toggle("is-muted", muted);

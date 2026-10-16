@@ -277,6 +277,19 @@ body {
   transform: rotate(90deg);
 }
 
+/* Live vote (queue head) glows; the queued press shows dimly (ADR 0007). .lit wins while held. */
+.key.vote-head {
+  box-shadow:
+    0 2px 0 #6d7269,
+    0 0 0 2px var(--lcd-bg),
+    0 0 12px rgb(199 240 216 / 0.45);
+}
+.key.vote-pending {
+  box-shadow:
+    0 2px 0 #6d7269,
+    0 0 0 2px rgb(199 240 216 / 0.35);
+}
+
 .key.lit {
   background: var(--lcd-bg);
   color: var(--lcd-px);

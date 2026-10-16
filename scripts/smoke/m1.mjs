@@ -112,7 +112,7 @@ const cs = (cdp) =>
     cdp,
     `(() => { const c = window.__cs; if (!c) return null; return { phase: c.phase, tick: c.tick, alive: c.alive,
       score: c.score, layout: c.layout, canvas: c.canvas, audioState: c.audioState, muted: c.muted,
-      motion: c.motion, soundsPlayed: c.soundsPlayed }; })()`,
+      motion: c.motion, soundsPlayed: c.soundsPlayed, hidden: document.hidden }; })()`,
   );
 async function waitFor(cdp, label, pred, timeoutMs = 20_000) {
   const end = Date.now() + timeoutMs;
