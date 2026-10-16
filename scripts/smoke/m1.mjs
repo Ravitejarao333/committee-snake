@@ -5,12 +5,14 @@
 // Plays desktop 1366×768, mobile 390×844@3× and reduced-motion; screenshots to outDir.
 // Exits 1 on any failed check or console error/warning. Needs the dev-only `window.__cs` hook.
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const url = process.argv[2] ?? "http://localhost:5173";
-const outDir = process.argv[3] ?? join(tmpdir(), "committee-snake-smoke");
+// Default to a fresh private dir rather than a predictable shared /tmp path.
+const outDir = process.argv[3] ?? mkdtempSync(join(tmpdir(), "cs-smoke-"));
 const chromePath =
   process.env.CHROME_PATH ??
   (process.platform === "darwin"
@@ -26,12 +28,20 @@ const check = (ok, label) => {
 };
 
 // --- Chrome + CDP plumbing ---------------------------------------------------
+// Pick a free port up front instead of reading Chrome's DevToolsActivePort file.
+const port = await new Promise((resolve, reject) => {
+  const srv = createServer().listen(0, "127.0.0.1", () => {
+    const { port: p } = srv.address();
+    srv.close(() => resolve(p));
+  });
+  srv.on("error", reject);
+});
 const profile = mkdtempSync(join(tmpdir(), "cs-chrome-"));
 const chrome = spawn(
   chromePath,
   [
     "--headless=new",
-    "--remote-debugging-port=0",
+    `--remote-debugging-port=${port}`,
     `--user-data-dir=${profile}`,
     "--no-first-run",
     "--mute-audio",
@@ -43,19 +53,20 @@ const cleanup = () => {
   rmSync(profile, { recursive: true, force: true });
 };
 
-async function devtoolsPort() {
+async function waitForDevtools() {
   for (let i = 0; i < 100; i++) {
     try {
-      return readFileSync(join(profile, "DevToolsActivePort"), "utf8").split("\n")[0];
+      if ((await fetch(`http://127.0.0.1:${port}/json/version`)).ok) return;
     } catch {
-      await sleep(100);
+      // not listening yet
     }
+    await sleep(100);
   }
   throw new Error(`Chrome did not start (${chromePath})`);
 }
 
 async function connect() {
-  const port = await devtoolsPort();
+  await waitForDevtools();
   const target = await (
     await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" })
   ).json();
