@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { MAX_CLIENT_MESSAGE_BYTES, parseClientMessage, ROOM_CODE_RE } from "./protocol";
+import { MAX_CLIENT_MESSAGE_BYTES, ROOM_CODE_RE } from "./constants";
+import { parseClientMessage } from "./protocol";
 
 describe("parseClientMessage", () => {
   it("accepts valid messages", () => {
