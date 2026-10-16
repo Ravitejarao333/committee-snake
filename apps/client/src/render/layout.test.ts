@@ -1,21 +1,31 @@
 import { describe, expect, it } from "vitest";
 import { computeLcdLayout } from "./layout";
 
-const base = { cols: 32, rows: 20, hudRows: 2 };
+const base = { cols: 32, rows: 20, hudRows: 2, frame: 2 };
 
 describe("computeLcdLayout", () => {
-  it("gives a 5px dot / 21px pitch at the 1366x768 slot", () => {
-    const l = computeLcdLayout({ ...base, availW: 700, availH: 500, dpr: 1 });
-    expect(l).toMatchObject({ dot: 5, gap: 1, pitch: 21, widthDev: 672, heightDev: 462 });
-    expect(l.cssW).toBe(672);
-    expect(l.cssH).toBe(462);
+  it("gives a 4px dot / 17px pitch at the 1366x768 slot (36x26 cells with the frame)", () => {
+    const l = computeLcdLayout({ ...base, availW: 636, availH: 459, dpr: 1 });
+    expect(l).toMatchObject({ dot: 4, gap: 1, pitch: 17, widthDev: 612, heightDev: 442, frame: 2 });
+    expect(l.cssW).toBe(612);
+    expect(l.cssH).toBe(442);
+  });
+
+  it("gives a 7 device px dot at 390x844 @3 (1116x806 dev)", () => {
+    const l = computeLcdLayout({ ...base, availW: 390, availH: (390 * 26) / 36, dpr: 3 });
+    expect(l).toMatchObject({ dot: 7, gap: 3, pitch: 31, widthDev: 1116, heightDev: 806 });
+  });
+
+  it("without a frame the board fills the width", () => {
+    const l = computeLcdLayout({ ...base, frame: 0, availW: 700, availH: 500, dpr: 1 });
+    expect(l).toMatchObject({ dot: 5, pitch: 21, widthDev: 672, heightDev: 462, frame: 0 });
   });
 
   it("rounds the gap to whole device px and keeps the backing store integral", () => {
     const l = computeLcdLayout({ ...base, availW: 390, availH: 600, dpr: 3 });
     expect(l.gap).toBe(3);
     expect(l.pitch).toBe(4 * l.dot + 3);
-    expect(l.widthDev).toBe(32 * l.pitch);
+    expect(l.widthDev).toBe(36 * l.pitch);
     expect(l.cssW * 3).toBe(l.widthDev);
     expect(l.widthDev).toBeLessThanOrEqual(390 * 3);
   });

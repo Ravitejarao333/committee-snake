@@ -9,6 +9,39 @@ import {
   type VoteMap,
 } from "./types";
 
+/** Live votes counted per direction, before any winner is picked. */
+export interface VoteCount {
+  counts: Record<Dir, number>;
+  /** Votes for the reverse of `current`; they never count. */
+  nonsense: number;
+  /** Who cast the `nonsense` votes, in vote-map order. */
+  nonsenseBy: PlayerId[];
+  /** Who voted for each direction, in vote-map order. Reverse votes are not listed here. */
+  byDir: Record<Dir, PlayerId[]>;
+}
+
+/**
+ * Count live votes for display (tally bars) and for `tally`. Pure and RNG-free: a vote for
+ * the reverse of `current` goes to `nonsense`, every other vote to its direction.
+ */
+export function countVotes(live: VoteMap, current: Dir): VoteCount {
+  const counts: Record<Dir, number> = { U: 0, D: 0, L: 0, R: 0 };
+  const byDir: Record<Dir, PlayerId[]> = { U: [], D: [], L: [], R: [] };
+  const nonsenseBy: PlayerId[] = [];
+  const reverse = OPPOSITE[current];
+
+  for (const [pid, dir] of live) {
+    if (dir === reverse) {
+      nonsenseBy.push(pid);
+      continue;
+    }
+    counts[dir]++;
+    byDir[dir].push(pid);
+  }
+
+  return { counts, nonsense: nonsenseBy.length, nonsenseBy, byDir };
+}
+
 /**
  * Count standing votes and pick the direction for this tick.
  *
@@ -19,22 +52,11 @@ import {
  * - No valid votes at all -> keep going straight.
  */
 export function tally(votes: VoteMap, current: Dir, mode: Mode, rng: Rng): Tally {
-  const counts: Record<Dir, number> = { U: 0, D: 0, L: 0, R: 0 };
-  const byDir: Record<Dir, PlayerId[]> = { U: [], D: [], L: [], R: [] };
-  let nonsense = 0;
-
-  for (const [pid, dir] of votes) {
-    if (dir === OPPOSITE[current]) {
-      nonsense++;
-      continue;
-    }
-    counts[dir]++;
-    byDir[dir].push(pid);
-  }
+  const { counts, nonsense, nonsenseBy, byDir } = countVotes(votes, current);
 
   const voted = DIRS.filter((d) => counts[d] > 0);
   if (voted.length === 0) {
-    return { counts, nonsense, winner: current, winners: [] };
+    return { counts, nonsense, nonsenseBy, winner: current, winners: [] };
   }
 
   const pick = mode === "chaos" ? Math.min : Math.max;
@@ -50,5 +72,5 @@ export function tally(votes: VoteMap, current: Dir, mode: Mode, rng: Rng): Tally
     winner = tied[rng.int(tied.length)] as Dir;
   }
 
-  return { counts, nonsense, winner, winners: byDir[winner] };
+  return { counts, nonsense, nonsenseBy, winner, winners: byDir[winner] };
 }

@@ -2,6 +2,7 @@
 
 - **Status:** Proposed
 - **Date:** 2026-10-15
+- **Amended 2026-10-16:** one extra draw after the death step, for the Blame Screen caption.
 
 ## Context
 
@@ -9,7 +10,7 @@ Every round has a 32-bit seed so any reported bug can be replayed exactly (docs/
 
 ## Decision
 
-Each round uses exactly one `mulberry32(seed)` instance, consumed in this order and nowhere else: `createGame(rng, rules)` once, then `step(state, votes, rng, rules)` once per tick. `votes` is the live (non-expired) vote map at that tick's boundary. Nothing outside `packages/shared` draws from this stream. Ghost votes (§5.5) come from a separate generator derived from the same seed and are written into the vote log like human votes, so replay never has to regenerate them. Room codes, tokens and other non-gameplay randomness use `crypto.getRandomValues`.
+Each round uses exactly one `mulberry32(seed)` instance, consumed in this order and nowhere else: `createGame(rng, rules)` once, then `step(state, votes, rng, rules)` once per tick. `votes` is the live (non-expired) vote map at that tick's boundary. After the death step, the room draws exactly once more, for the Blame Screen caption (`blameReport`). That draw comes after the last `step`, so replaying the round's states is unaffected, and the caption itself is replayable too. Nothing outside `packages/shared` draws from this stream. Ghost votes (§5.5) come from a separate generator derived from the same seed and are written into the vote log like human votes, so replay never has to regenerate them. Room codes, tokens and other non-gameplay randomness use `crypto.getRandomValues`.
 
 ## Consequences
 

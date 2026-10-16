@@ -155,10 +155,12 @@ Below it, **awards** (pick 2–3 per round):
 - *Bug Hunter* — voted toward the bonus critter most.
 - *The Prophet* — voted against the fatal move.
 
+Awards are picked in priority order: Assassin, Most Agreeable, Contrarian, Professional Napper, then Prophet (only to fill a gap), at most 3. Bug Hunter comes later. Players who voted the reverse direction are listed separately as "Voted backwards", not as savers or Prophets.
+
 Plus a **funny caption** picked from a list keyed to how you died. Examples:
 
 - Hit wall at length \< 5: *"Committee formed. Committee dissolved."*
-- Ate own tail: *"The snake was its own worst enemy. Like the committee."*
+- Ate own tail: *"Its own worst enemy. Like the committee."*
 - Died while chasing the bonus bug: *"Greed. Always greed."*
 - Chaos mode: *"Nobody wanted this. That's how it won."*
 

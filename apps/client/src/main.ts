@@ -12,10 +12,9 @@ const phone = createPhone(app);
 const lcd = createLcd(phone.canvas, phone.slot);
 const audio = createAudio();
 phone.setMuted(audio.muted);
-phone.setCapacity(1, 24);
 
 const driver = createDriver(lcd, phone, audio);
-attachInput({ keypad: phone.keypad, light: phone.light }, driver.handlers);
+attachInput({ keypad: phone.keypad, canvas: phone.canvas, light: phone.light }, driver.handlers);
 
 const loop = (now: number): void => {
   driver.frame(now);

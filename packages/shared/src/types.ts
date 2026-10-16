@@ -89,6 +89,8 @@ export interface Tally {
   counts: Record<Dir, number>;
   /** Votes for the reverse direction, shown as "nonsense" and never counted. */
   nonsense: number;
+  /** Players whose vote was the reverse direction (the `nonsense` votes), in vote-map order. */
+  nonsenseBy: PlayerId[];
   winner: Dir;
   /** Players whose vote matched `winner`. */
   winners: PlayerId[];

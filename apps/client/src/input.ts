@@ -6,12 +6,18 @@ const MIN_FLASH_MS = 90;
 export interface InputHandlers {
   /** Every gesture, before the action: lets audio unlock. */
   gesture(): void;
-  /** `repeat` is a held key auto-repeating: refresh the vote silently. */
-  action(a: KeyAction, repeat: boolean): void;
+  /**
+   * `repeat` is a held key auto-repeating: refresh the vote silently. Returns whether the game
+   * used the action; an unused Ctrl/Cmd+C is left to the browser.
+   */
+  action(a: KeyAction, repeat: boolean): boolean;
+  /** A click or tap on the LCD, in device px of the canvas backing store. */
+  lcdTap(x: number, y: number): void;
 }
 
 interface InputDeps {
   keypad: HTMLElement;
+  canvas: HTMLCanvasElement;
   light(key: string, on: boolean): void;
 }
 
@@ -22,16 +28,17 @@ function padKeyFor(a: KeyAction): string | null {
   return null;
 }
 
+/** On-screen keypad presses vote as P1 (the person holding the phone). */
 function actionForPad(key: string): KeyAction {
   switch (key) {
     case "2":
-      return { kind: "vote", dir: "U" };
+      return { kind: "vote", seat: 0, dir: "U" };
     case "4":
-      return { kind: "vote", dir: "L" };
+      return { kind: "vote", seat: 0, dir: "L" };
     case "6":
-      return { kind: "vote", dir: "R" };
+      return { kind: "vote", seat: 0, dir: "R" };
     case "8":
-      return { kind: "vote", dir: "D" };
+      return { kind: "vote", seat: 0, dir: "D" };
     case "*":
       return { kind: "mute" };
     case "5":
@@ -84,7 +91,12 @@ export function attachInput(deps: InputDeps, on: InputHandlers): void {
     if (fromKeypad(e.target) && (e.key === "Enter" || e.key === " ")) return;
     const a = actionForKey(e);
     if (a.kind === "ignore") return;
-    if (a.kind !== "other" || e.key === " ") e.preventDefault();
+    if (a.kind === "copy") {
+      // Only the Blame Screen uses it; elsewhere the browser's copy goes ahead untouched.
+      if (!e.repeat && on.action(a, false)) e.preventDefault();
+      return;
+    }
+    if (a.kind !== "other") e.preventDefault();
     if (e.repeat) {
       if (a.kind === "vote") on.action(a, true);
       return;
@@ -125,6 +137,16 @@ export function attachInput(deps: InputDeps, on: InputHandlers): void {
   };
   deps.keypad.addEventListener("pointerup", up);
   deps.keypad.addEventListener("pointercancel", up);
+
+  deps.canvas.addEventListener("pointerup", (e) => {
+    if (e.button > 0) return;
+    on.gesture();
+    const r = deps.canvas.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return;
+    const x = Math.floor(((e.clientX - r.left) * deps.canvas.width) / r.width);
+    const y = Math.floor(((e.clientY - r.top) * deps.canvas.height) / r.height);
+    on.lcdTap(x, y);
+  });
 
   deps.keypad.addEventListener("click", (e) => {
     if (e.detail !== 0) return; // real pointer clicks were handled on pointerdown

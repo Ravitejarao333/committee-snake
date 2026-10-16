@@ -1,3 +1,8 @@
+import { avatarBits, DIRS, type Dir, type PlayerId } from "@committee-snake/shared";
+import { KEYPAD_FOR_DIR } from "../keymap";
+import type { RosterEntry } from "../roster";
+import { avatarPath } from "./avatar";
+
 /**
  * Builds the candybar frame: earpiece, bezel, a status strip on the LCD
  * colour, the LCD slot and a 3x4 keypad. Original shape; no logos.
@@ -8,8 +13,10 @@ export interface Phone {
   readonly slot: HTMLElement;
   readonly keypad: HTMLElement;
   light(key: string, on: boolean): void;
-  /** Mark the key of the live vote, and dimly the queued one (null clears). */
-  showVotes(head: string | null, pending: string | null): void;
+  /** Glow the leading direction(s) and put each voter's avatar dot on their key. */
+  showVotes(leading: readonly Dir[], voters: Readonly<Record<Dir, readonly PlayerId[]>>): void;
+  /** The roster strip: one entry per claimed seat. */
+  setRoster(entries: readonly RosterEntry[]): void;
   setMuted(muted: boolean): void;
   setCapacity(n: number, max: number): void;
 }
@@ -37,8 +44,11 @@ const KEYS: readonly KeySpec[] = [
   { key: "#", letters: "", label: "Leave room (unavailable)", soon: true },
 ];
 
+const VOTE_KEYS = new Set(Object.values(KEYPAD_FOR_DIR));
+
 function keyHtml(k: KeySpec): string {
-  const face = `<span class="key-d">${k.key}</span><span class="key-l">${k.letters}</span>`;
+  const dots = VOTE_KEYS.has(k.key) ? '<span class="key-dots" aria-hidden="true"></span>' : "";
+  const face = `<span class="key-d">${k.key}</span><span class="key-l">${k.letters}</span>${dots}`;
   if (!k.label) {
     return `<button type="button" class="key key-inert" data-key="${k.key}" tabindex="-1" aria-hidden="true">${face}</button>`;
   }
@@ -49,6 +59,23 @@ function keyHtml(k: KeySpec): string {
 
 const SPEAKER = `<svg class="glyph" viewBox="0 0 9 7" aria-hidden="true" shape-rendering="crispEdges"><path d="M0 2h2v3H0zM2 2h1V1h1V0h1v7H4V6H3V5H2z"/><path class="on" d="M6 2h1v3H6zM8 1h1v5H8z"/><path class="off" d="M6 1h1v1H6zM7 2h1v1H7zM8 1h1v1H8zM6 5h1v1H6zM7 4h1v1H7zM8 5h1v1H8zM7 3h1v1H7z"/></svg>`;
 
+const avatarSvg = (id: PlayerId, cls: string): string =>
+  `<svg class="${cls}" viewBox="0 0 7 7" shape-rendering="crispEdges" aria-hidden="true"><path d="${avatarPath(avatarBits(id))}"/></svg>`;
+
+const DIR_WORD: Readonly<Record<Dir, string>> = { U: "up", D: "down", L: "left", R: "right" };
+
+/** A 5x5 pixel arrow pointing up; CSS rotates it for the other directions. */
+const arrowSvg = (d: Dir, cls: string): string =>
+  `<svg class="arr arr-${d} ${cls}" viewBox="0 0 5 5" shape-rendering="crispEdges" aria-hidden="true"><path d="M2 0h1v5H2zM1 1h3v1H1zM0 2h5v1H0z"/></svg>`;
+
+function seatHtml(e: RosterEntry): string {
+  const said = e.head ? `voting ${DIR_WORD[e.head]}` : "napping";
+  const head = e.head ? arrowSvg(e.head, "") : "";
+  const pending = e.pending ? arrowSvg(e.pending, "pend") : "";
+  const zz = e.asleep ? '<i class="zz">zZ</i>' : "";
+  return `<span class="seat${e.asleep ? " asleep" : ""}" role="listitem" aria-label="${e.name}, ${said}">${avatarSvg(e.id, "av")}<b>${e.name}</b>${head}${pending}${zz}</span>`;
+}
+
 const TEMPLATE = `
 <div class="phone">
   <div class="earpiece" aria-hidden="true"></div>
@@ -57,8 +84,9 @@ const TEMPLATE = `
       <div class="status" aria-hidden="true">
         <span class="signal"><i></i><i></i><i></i><i></i></span><span class="net">local</span>
         <span class="mute">${SPEAKER}</span>
-        <span class="cap">1/24</span><span class="battery"><i></i></span>
+        <span class="cap">0/4</span><span class="battery"><i></i></span>
       </div>
+      <div class="roster" role="list" aria-label="Players"></div>
       <div class="lcd-slot"><canvas id="lcd" role="img" aria-label="Snake game screen"></canvas></div>
     </div>
   </div>
@@ -80,6 +108,14 @@ export function createPhone(app: HTMLElement): Phone {
   const mute = must(app, ".mute", HTMLElement);
   const battery = must(app, ".battery i", HTMLElement);
   const cap = must(app, ".cap", HTMLElement);
+  const roster = must(app, ".roster", HTMLElement);
+  /** Last rendered markup per element, so unchanged frames don't touch the DOM. */
+  const shown = new Map<Element, string>();
+  const html = (el: Element, markup: string): void => {
+    if (shown.get(el) === markup) return;
+    shown.set(el, markup);
+    el.innerHTML = markup;
+  };
   const buttons = new Map<string, HTMLButtonElement>();
   for (const b of keypad.querySelectorAll<HTMLButtonElement>("button[data-key]")) {
     const k = b.dataset.key;
@@ -94,11 +130,17 @@ export function createPhone(app: HTMLElement): Phone {
     light(key, on) {
       buttons.get(key)?.classList.toggle("lit", on);
     },
-    showVotes(head, pending) {
-      for (const [k, b] of buttons) {
-        b.classList.toggle("vote-head", k === head);
-        b.classList.toggle("vote-pending", k === pending);
+    showVotes(leading, voters) {
+      for (const d of DIRS) {
+        const b = buttons.get(KEYPAD_FOR_DIR[d]);
+        if (!b) continue;
+        b.classList.toggle("vote-head", leading.includes(d));
+        const dots = b.querySelector(".key-dots");
+        if (dots) html(dots, voters[d].map((id) => avatarSvg(id, "dot")).join(""));
       }
+    },
+    setRoster(entries) {
+      html(roster, entries.map(seatHtml).join(""));
     },
     setMuted(muted) {
       mute.classList.toggle("is-muted", muted);
