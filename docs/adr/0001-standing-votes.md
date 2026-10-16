@@ -14,3 +14,5 @@ A player's vote **stays** until they change it. It **expires 4 seconds** after t
 ## Consequences
 
 Steering feels intentional and the tally bars become the main animation. AFK players cannot silently steer. The 4-second value is a tunable and is the first thing to adjust if the M2 hot-seat test isn't funny.
+
+Refined by [ADR 0007](0007-two-deep-vote-queue.md): the standing vote is now the head of a two-deep queue, so a second quick press is kept, not overwritten.

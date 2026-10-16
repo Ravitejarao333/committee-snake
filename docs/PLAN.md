@@ -90,6 +90,7 @@ Sound is **off by default on mobile** and on after the first tap on desktop (bro
 
 - **Standing votes.** Your vote *stays* until you change it. You don't have to mash every tick. This single decision matters most: per-tick voting at 3–8 Hz is impossible for humans and feels random rather than funny.
 - **Vote expiry.** A vote expires **4 seconds** after your last key press. Your seat goes grey ("napping"). This stops AFK players from silently steering.
+- **Vote queue.** Each player holds up to two presses: the live *head* and one *pending* direction (ADR 0007). When the head wins a tick, the pending press takes over, so Up-then-Left inside one tick turns Up and then Left on consecutive ticks, and Down-then-Left escapes the right wall. A third press replaces the pending one. A pending press that has become a reverse is dropped. A head that keeps losing keeps its place. Expiry counts from your latest press.
 - **Reverse votes don't count.** A vote for the opposite of the current direction can't win (classic rule). It's shown in its own grey "🙃 nonsense" tally so everyone can see who's trolling.
 - **Tie-break:** if the current direction is among the tied winners, keep going straight. Otherwise pick among the tied directions with the seeded RNG (§6.3), so replays stay deterministic.
 - **No votes at all:** keep going straight.
