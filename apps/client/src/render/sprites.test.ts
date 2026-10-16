@@ -5,6 +5,7 @@ import {
   BODY_B,
   CORNER,
   CRITTER,
+  cellSprite,
   DIGITS,
   FOOD,
   HEAD,
@@ -18,11 +19,35 @@ const valid = (b: Bitmap): boolean =>
   b.every((r) => /^[#.]+$/.test(r) && r.length === b[0]?.length);
 
 describe("sprites", () => {
-  it("cell sprites are 4x4 and well-formed", () => {
-    for (const b of [BODY_A, BODY_B, CORNER, TAIL, HEAD, HEAD_OPEN, FOOD]) {
-      expect(shape(b)).toEqual([4, 4]);
+  it("snake cores are 3x3 and food is 4x4, all well-formed", () => {
+    for (const b of [BODY_A, BODY_B, CORNER, TAIL, HEAD, HEAD_OPEN]) {
+      expect(shape(b)).toEqual([3, 3]);
       expect(valid(b)).toBe(true);
     }
+    expect(shape(FOOD)).toEqual([4, 4]);
+    expect(valid(FOOD)).toBe(true);
+  });
+
+  it("body and head are 3 dots thick", () => {
+    const thickness = (b: Bitmap, x: number) => b.filter((r) => r[x] === "#").length;
+    expect(thickness(BODY_A, 0)).toBe(3);
+    expect(thickness(BODY_B, 0)).toBe(3);
+    expect(thickness(HEAD, 0)).toBe(3);
+    // The notch is kept: one dot missing on alternate edges.
+    expect(thickness(BODY_A, 1)).toBe(2);
+    expect(BODY_A[0]).not.toBe(BODY_B[0]);
+  });
+
+  it("cellSprite keeps the 1-dot gap except toward a linked neighbour", () => {
+    expect(cellSprite(BODY_B, { right: false, down: false })).toEqual([
+      "###.",
+      "###.",
+      "#.#.",
+      "....",
+    ]);
+    const linked = cellSprite(BODY_A, { right: true, down: true });
+    expect(linked.map((r) => r[3]).join("")).toBe("###.");
+    expect(linked[3]).toBe("###.");
   });
 
   it("critter is 4x4 and digits are 3x5, 0-9", () => {
@@ -47,6 +72,13 @@ describe("sprites", () => {
     expect(new Set(all).size).toBe(4);
     expect(rotate(rotate(HEAD, "D"), "U")).toEqual(HEAD);
     expect(rotate(rotate(HEAD, "D"), "D")).toEqual(rotate(HEAD, "L"));
+  });
+
+  it("a rotated core stays 3x3: vertical body is 3 wide, head nose follows its direction", () => {
+    expect(rotate(BODY_A, "D")).toEqual(["###", "##.", "###"]);
+    expect(shape(rotate(HEAD, "U"))).toEqual([3, 3]);
+    expect(rotate(HEAD, "D")[2]).toBe(".#.");
+    expect(rotate(HEAD, "U")[0]).toBe(".#.");
   });
 
   it("rotate turns clockwise", () => {

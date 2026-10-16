@@ -7,6 +7,7 @@ import {
   BODY_B,
   CORNER,
   CRITTER,
+  cellSprite,
   DIGITS,
   FOOD,
   HEAD,
@@ -37,26 +38,33 @@ const CORNER_TURN: Readonly<Record<string, Dir>> = { DL: "R", LU: "D", RU: "L", 
 
 const at = (c: Cell | undefined, x: number, y: number): boolean => !!c && c[0] === x && c[1] === y;
 
-/** The sprite for segment `i` of the snake (head first). */
-export function segmentSprite(view: BoardView, i: number, mouthOpen: boolean): Bitmap {
+/** The 3x3 core for segment `i` and the sides it links to. */
+function segmentCore(view: BoardView, i: number, mouthOpen: boolean): [Bitmap, Dir[]] {
   const s = view.snake;
   const cell = s[i];
-  if (!cell) return [];
-  if (i === 0) return rotate(mouthOpen ? HEAD_OPEN : HEAD, view.dir);
+  if (!cell) return [[], []];
   const toHead = s[i - 1];
   const toTail = s[i + 1];
-  if (!toHead) return [];
+  const neck = toTail ? sideOf(cell, toTail) : null;
+  if (i === 0) return [rotate(mouthOpen ? HEAD_OPEN : HEAD, view.dir), neck ? [neck] : []];
+  if (!toHead) return [[], []];
   const a = sideOf(cell, toHead);
-  if (!toTail) return rotate(TAIL, a);
-  const b = sideOf(cell, toTail);
-  const straight = (a === "L" || a === "R") === (b === "L" || b === "R");
+  if (!neck) return [rotate(TAIL, a), [a]];
+  const straight = (a === "L" || a === "R") === (neck === "L" || neck === "R");
   if (straight) {
     // Alternate the notch per segment; tick - i is stable for a segment as it moves.
     const body = ((view.tick - i) & 1) === 0 ? BODY_A : BODY_B;
-    return rotate(body, a === "L" || a === "R" ? "R" : "D");
+    return [rotate(body, a === "L" || a === "R" ? "R" : "D"), [a, neck]];
   }
-  const key = [a, b].sort().join("");
-  return rotate(CORNER, CORNER_TURN[key] ?? "R");
+  const key = [a, neck].sort().join("");
+  return [rotate(CORNER, CORNER_TURN[key] ?? "R"), [a, neck]];
+}
+
+/** The 4x4 sprite for segment `i` of the snake (head first). */
+export function segmentSprite(view: BoardView, i: number, mouthOpen: boolean): Bitmap {
+  const [core, links] = segmentCore(view, i, mouthOpen);
+  if (core.length === 0) return [];
+  return cellSprite(core, { right: links.includes("R"), down: links.includes("D") });
 }
 
 /** True when the head is about to bite food or the critter (cosmetic look-ahead). */
