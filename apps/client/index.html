@@ -2,16 +2,27 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Classic phone Snake, except everyone in the room votes on where it turns. Democracy was a mistake." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Committee Snake</title>
+    <meta name="description" content="Classic phone Snake, except everyone in the room votes on where it turns. Democracy was a mistake." />
+    <meta name="theme-color" content="#1b1d1a" />
+    <!-- TODO(M6): real og.png and final copy. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Committee Snake" />
+    <meta property="og:description" content="Classic phone Snake, except everyone in the room votes on where it turns." />
+    <meta property="og:image" content="/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Committee Snake" />
+    <meta name="twitter:description" content="Classic phone Snake, except everyone in the room votes on where it turns." />
+    <meta name="twitter:image" content="/og.png" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%23c7f0d8'/%3E%3Cpath fill='%2343523d' d='M1 5h4v1H1zM4 2h1v3H4zM4 2h3v1H4zM2 2h1v1H2z'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <main id="app">
-      <canvas id="lcd" width="640" height="400" aria-label="Snake game screen"></canvas>
-      <p class="hint">Arrow keys / WASD to vote. M0 build: local sim only.</p>
-    </main>
+    <main id="app"></main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

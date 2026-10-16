@@ -70,6 +70,11 @@ export function currentTps(state: GameState, rules: Rules = DEFAULT_RULES): numb
   return Math.min(rules.maxTps, rules.baseTps + steps * rules.tpsStep);
 }
 
+/** Milliseconds until the next tick at the current speed (raw float, e.g. 333.33… at 3 tps). */
+export function nextTickDelayMs(state: GameState, rules: Rules = DEFAULT_RULES): number {
+  return 1000 / currentTps(state, rules);
+}
+
 /** Bonus value: 50 points if grabbed instantly, decaying to 5. */
 export function bonusPoints(ttl: number, rules: Rules = DEFAULT_RULES): number {
   return Math.max(5, Math.round((ttl / rules.bonusTtl) * 50));

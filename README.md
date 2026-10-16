@@ -45,6 +45,21 @@ docs/              PLAN.md (design doc) and ADRs
 scripts/           setup-github.sh (one-time repo bootstrap)
 ```
 
+## Controls
+
+Every input lights the matching key on the on-screen keypad. Your vote stands until you change it, and expires after 4 seconds without a key press.
+
+| Input | Up | Left | Right | Down | Other |
+| --- | --- | --- | --- | --- | --- |
+| Arrow keys | ↑ | ← | → | ↓ | |
+| WASD | W | A | D | S | |
+| Number row (phone layout) | 2 | 4 | 6 | 8 | |
+| Numpad (follows its printed arrows) | 8 | 4 | 6 | 2 | |
+| On-screen keypad (click or tap) | 2 | 4 | 6 | 8 | 5 = emotes (coming soon) |
+| Sound | | | | | `*` or `M` toggles mute (off by default on touch devices) |
+
+The number row and the numpad disagree on purpose. On a phone keypad, 2 is the top row, so it means up. On a numpad, 8 is the top row and carries the ↑ legend.
+
 ## Getting started
 
 Requires **Node 24** (see `.nvmrc`; the minimum is **22.15**, because `scripts/replay.ts` uses `module.registerHooks`) and **pnpm** (`corepack enable` gives you the pinned version).
@@ -77,7 +92,7 @@ The Deploy workflow is skipped until you add the `CLOUDFLARE_API_TOKEN` and `CLO
 | # | Goal | Status |
 | --- | --- | --- |
 | M0 | Pure sim + tests | ✅ |
-| M1 | Local single-player with LCD look, keypad, beeps | 🔜 |
+| M1 | Local single-player with LCD look, keypad, beeps | ✅ |
 | M2 | Hot-seat committee: 4 people, one keyboard, Blame Screen | 🔜 |
 | M3 | Private rooms online | |
 | M4 | Public rooms, ghost voters, spectators | |

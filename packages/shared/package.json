@@ -4,6 +4,7 @@
   "private": true,
   "description": "Pure, deterministic game simulation, vote tallying and wire protocol. No I/O.",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts"
   },

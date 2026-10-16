@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mulberry32 } from "./rng";
-import { bonusPoints, createGame, currentTps, step } from "./sim";
+import { bonusPoints, createGame, currentTps, nextTickDelayMs, step } from "./sim";
 import { DEFAULT_RULES, type Dir, type GameState, type Rules } from "./types";
 
 const none = new Map<string, Dir>();
@@ -178,5 +178,18 @@ describe("property: random committees", () => {
       }
       expect(a).toEqual(b);
     }
+  });
+});
+
+describe("nextTickDelayMs", () => {
+  const g = createGame(mulberry32(1));
+  it("is 1000/3 ms at base speed", () => {
+    expect(nextTickDelayMs(g)).toBe(1000 / 3);
+  });
+  it("is 1000/3.25 ms after 5 food", () => {
+    expect(nextTickDelayMs({ ...g, eaten: 5 })).toBe(1000 / 3.25);
+  });
+  it("is 125 ms at the 8 tps cap", () => {
+    expect(nextTickDelayMs({ ...g, eaten: 500 })).toBe(125);
   });
 });
