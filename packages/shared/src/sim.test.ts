@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { mulberry32 } from "./rng";
 import { bonusPoints, createGame, currentTps, nextTickDelayMs, step } from "./sim";
-import { DEFAULT_RULES, type Dir, type GameState, type Rules } from "./types";
+import { DEFAULT_RULES, type Dir, type GameState, type Rules, type VoteQueue } from "./types";
+import { expireVotes, pushVote, settleVotes } from "./votes";
 
 const none = new Map<string, Dir>();
 const one = (d: Dir) => new Map([["p", d]]);
@@ -178,6 +179,35 @@ describe("property: random committees", () => {
       }
       expect(a).toEqual(b);
     }
+  });
+});
+
+describe("property: random committees through vote queues", () => {
+  it("same presses give the same game, and the snake never overlaps itself", () => {
+    const dirs: Dir[] = ["U", "D", "L", "R"];
+    const playOnce = (seed: number): GameState => {
+      const rng = mulberry32(seed);
+      const pressRng = mulberry32(seed * 7919);
+      let state = createGame(mulberry32(seed));
+      let votes = new Map<string, VoteQueue>();
+      for (let t = 0; t < 400 && state.alive; t++) {
+        const now = t * 250;
+        const presses = pressRng.int(4);
+        for (let i = 0; i < presses; i++) {
+          const pid = `p${pressRng.int(6)}`;
+          const dir = dirs[pressRng.int(4)] as Dir;
+          votes.set(pid, pushVote(votes.get(pid), { dir, at: now + i }));
+        }
+        state = step(state, expireVotes(votes, now + 100).live, rng).state;
+        votes = settleVotes(votes, state.dir);
+        if (state.alive) {
+          const keys = state.snake.map(([x, y]) => `${x},${y}`);
+          expect(new Set(keys).size).toBe(keys.length);
+        }
+      }
+      return state;
+    };
+    for (let seed = 1; seed <= 300; seed++) expect(playOnce(seed)).toEqual(playOnce(seed));
   });
 });
 
