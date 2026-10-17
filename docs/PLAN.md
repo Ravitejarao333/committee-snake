@@ -155,10 +155,14 @@ Below it, **awards** (pick 2–3 per round):
 - *Bug Hunter* — voted toward the bonus critter most.
 - *The Prophet* — voted against the fatal move.
 
+Awards are picked in priority order: Assassin, Most Agreeable, Contrarian, Professional Napper, then Prophet (only to fill a gap), at most 3. Bug Hunter comes later. Players who voted the reverse direction are listed separately as "Voted backwards", not as savers or Prophets.
+
+As implemented (`packages/shared/src/awards.ts`), a "vote" for the ratio awards is a tick on which the seat had a live vote, not a key press. Most Agreeable and The Contrarian are the highest and lowest share of such ticks that went the seat's way, among seats with at least 5. The Contrarian is skipped when everyone has the same share, so it reads "lost the most, relative to how much they voted" rather than a raw count of lost votes. Professional Napper needs a nap of at least 12 ticks, counted only after the seat's first vote. Every award lists all players tied for it.
+
 Plus a **funny caption** picked from a list keyed to how you died. Examples:
 
 - Hit wall at length \< 5: *"Committee formed. Committee dissolved."*
-- Ate own tail: *"The snake was its own worst enemy. Like the committee."*
+- Ate own tail: *"Its own worst enemy. Like the committee."*
 - Died while chasing the bonus bug: *"Greed. Always greed."*
 - Chaos mode: *"Nobody wanted this. That's how it won."*
 

@@ -5,25 +5,32 @@ import { type Bitmap, DIGITS } from "./sprites";
 export const COLS = 32;
 const ROWS = 20;
 const HUD_ROWS = 2;
-const LCD_BG = "#c7f0d8";
-const LCD_PX = "#43523d";
+/** Board size in cells plus the HUD rows above it (the bars' frame goes around both). */
+export const GRID = { cols: COLS, rows: ROWS, hudRows: HUD_ROWS } as const;
+/** Tally-bar frame cells on each side of the board. */
+const FRAME = 2;
+export const LCD_BG = "#c7f0d8";
+export const LCD_PX = "#43523d";
 const GHOST_ALPHA = 0.06;
 const SHIMMER_ALPHA = 0.02;
 const AFTERIMAGE_MS = 120;
 const AFTERIMAGE_ALPHA = 0.45;
-const FONT = '"Press Start 2P", ui-monospace, monospace';
+export const FONT = '"Press Start 2P", ui-monospace, monospace';
 
 export interface Motion {
   shimmer: boolean;
   ramp: boolean;
   ghost: boolean;
+  /** Avatars slide between bars. */
+  slide: boolean;
+  /** Bars pulse on every tick. */
+  pulse: boolean;
 }
 
 interface Hud {
   score: number;
   len: number;
   tps: number;
-  napping: boolean;
 }
 
 export interface Afterimage {
@@ -34,9 +41,16 @@ export interface Afterimage {
 
 export type Overlay = { kind: "text"; lines: readonly string[] } | { kind: "digit"; n: number };
 
+/** Something drawn every frame on top of the board layer (bars, Blame Screen, toast). */
+export type Layer = (ctx: CanvasRenderingContext2D, layout: LcdLayout, now: number) => void;
+
 export interface Frame {
   /** LCD contrast 0..1 (power-on ramp). */
   power: number;
+  /** Show the tick-only board layer (off on the Blame Screen). */
+  board: boolean;
+  /** Drawn after the board and afterimage, before the overlay, in order. */
+  layers: readonly Layer[];
   afterimage: Afterimage | null;
   overlay: Overlay | null;
 }
@@ -52,9 +66,9 @@ export interface Lcd {
   composite(now: number, frame: Frame): void;
 }
 
-/** Device-px top-left of a board cell (the HUD rows sit above row 0). */
+/** Device-px top-left of a board cell (the HUD rows and the bar frame sit around it). */
 export function cellOrigin(l: LcdLayout, x: number, y: number): [number, number] {
-  return [x * l.pitch, (y + HUD_ROWS) * l.pitch];
+  return [(x + l.frame) * l.pitch, (y + HUD_ROWS + l.frame) * l.pitch];
 }
 
 /** Draw a bitmap's lit dots as whole-pixel squares of side `unit`. */
@@ -93,11 +107,7 @@ export function drawHud(ctx: CanvasRenderingContext2D, l: LcdLayout, hud: Hud): 
   ctx.textAlign = "left";
   ctx.fillText(`SCORE ${String(hud.score).padStart(4, "0")}`, pad, y);
   ctx.textAlign = "center";
-  ctx.fillText(
-    `${hud.napping ? "zZ " : "   "}LEN ${String(hud.len).padStart(3, "0")}`,
-    Math.floor(l.widthDev / 2),
-    y,
-  );
+  ctx.fillText(`LEN ${String(hud.len).padStart(3, "0")}`, Math.floor(l.widthDev / 2), y);
   ctx.textAlign = "right";
   ctx.fillText(`SPD ${hud.tps.toFixed(2)}`, l.widthDev - pad, y);
   // A one-dot rule under the HUD marks the top wall.
@@ -105,7 +115,7 @@ export function drawHud(ctx: CanvasRenderingContext2D, l: LcdLayout, hud: Hud): 
 }
 
 function drawOverlay(ctx: CanvasRenderingContext2D, l: LcdLayout, o: Overlay): void {
-  const boardTop = HUD_ROWS * l.pitch;
+  const boardTop = cellOrigin(l, 0, 0)[1];
   const boardH = ROWS * l.pitch;
   if (o.kind === "digit") {
     // A huge 3x5 digit where every font dot is one whole lit cell.
@@ -124,7 +134,8 @@ function drawOverlay(ctx: CanvasRenderingContext2D, l: LcdLayout, o: Overlay): v
     return;
   }
   const longest = Math.max(1, ...o.lines.map((s) => s.length));
-  const size = fontPx(Math.min(l.pitch * 1.6, (l.widthDev * 0.8) / longest));
+  // Press Start 2P is 1em per glyph; leave 2 em of padding each side inside a 1-cell margin.
+  const size = fontPx(Math.min(l.pitch * 1.6, (l.widthDev - 2 * l.pitch) / (longest + 4)));
   const lineH = size * 2;
   const padX = 2 * size;
   const boxW = Math.min(l.widthDev - 2 * l.pitch, longest * size + 2 * padX);
@@ -156,12 +167,14 @@ export function createLcd(canvas: HTMLCanvasElement, slot: HTMLElement): Lcd {
   const boardCtx = context(board);
   const listeners: (() => void)[] = [];
   const reduce = matchMedia("(prefers-reduced-motion: reduce)");
-  const motion: Motion = { shimmer: true, ramp: true, ghost: true };
+  const motion: Motion = { shimmer: true, ramp: true, ghost: true, slide: true, pulse: true };
   const applyMotion = (): void => {
     const on = !reduce.matches;
     motion.shimmer = on;
     motion.ramp = on;
     motion.ghost = on;
+    motion.slide = on;
+    motion.pulse = on;
   };
   applyMotion();
   reduce.addEventListener("change", applyMotion);
@@ -173,6 +186,7 @@ export function createLcd(canvas: HTMLCanvasElement, slot: HTMLElement): Lcd {
     cols: COLS,
     rows: ROWS,
     hudRows: HUD_ROWS,
+    frame: FRAME,
   });
   let availW = 0;
   let availH = 0;
@@ -189,6 +203,7 @@ export function createLcd(canvas: HTMLCanvasElement, slot: HTMLElement): Lcd {
       cols: COLS,
       rows: ROWS,
       hudRows: HUD_ROWS,
+      frame: FRAME,
     });
     const same =
       next.widthDev === layout.widthDev &&
@@ -208,8 +223,8 @@ export function createLcd(canvas: HTMLCanvasElement, slot: HTMLElement): Lcd {
     gridCtx.fillStyle = LCD_PX;
     gridCtx.globalAlpha = GHOST_ALPHA;
     const cell = CELL_DOTS * next.dot;
-    for (let y = 0; y < ROWS + HUD_ROWS; y++) {
-      for (let x = 0; x < COLS; x++) gridCtx.fillRect(x * next.pitch, y * next.pitch, cell, cell);
+    for (let y = 0; y < next.heightDev; y += next.pitch) {
+      for (let x = 0; x < next.widthDev; x += next.pitch) gridCtx.fillRect(x, y, cell, cell);
     }
     gridCtx.globalAlpha = 1;
     notify();
@@ -249,8 +264,8 @@ export function createLcd(canvas: HTMLCanvasElement, slot: HTMLElement): Lcd {
       ctx.fillRect(0, 0, l.widthDev, l.heightDev);
       ctx.globalAlpha = f.power;
       ctx.drawImage(grid, 0, 0);
-      ctx.drawImage(board, 0, 0);
-      const a = f.afterimage;
+      if (f.board) ctx.drawImage(board, 0, 0);
+      const a = f.board ? f.afterimage : null;
       if (a && motion.ghost) {
         const age = now - a.at;
         if (age >= 0 && age < AFTERIMAGE_MS) {
@@ -261,6 +276,12 @@ export function createLcd(canvas: HTMLCanvasElement, slot: HTMLElement): Lcd {
         }
       }
       ctx.globalAlpha = f.power;
+      ctx.fillStyle = LCD_PX;
+      for (const layer of f.layers) {
+        layer(ctx, l, now);
+        ctx.globalAlpha = f.power;
+        ctx.fillStyle = LCD_PX;
+      }
       if (f.overlay) drawOverlay(ctx, l, f.overlay);
       if (motion.shimmer) {
         // Faint horizontal bands drifting down, about one board height per 20 s.

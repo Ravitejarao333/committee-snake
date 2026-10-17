@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   advance,
+  BLAME_MS,
   COUNTDOWN_MS,
+  canSkip,
   canStart,
   countdown,
   countdownDigit,
@@ -12,10 +14,10 @@ import {
 } from "./phase";
 
 describe("phase machine", () => {
-  it("lobby waits for a key; over does too", () => {
+  it("lobby waits for a key", () => {
     expect(advance(lobby(0), 1e9).name).toBe("lobby");
     expect(canStart(lobby(0))).toBe(true);
-    expect(canStart({ name: "over", since: 0 })).toBe(true);
+    expect(canStart({ name: "blame", since: 0 })).toBe(false);
     expect(canStart(countdown(0))).toBe(false);
     expect(canStart({ name: "playing", since: 0 })).toBe(false);
   });
@@ -53,7 +55,17 @@ describe("phase machine", () => {
     const seen = [0, 50, 100, 150, 200, 300, 400, 500, 599].map((t) => visibleAt(d, t));
     expect(seen).toEqual([false, false, true, true, false, true, false, true, true]);
     expect(advance(d, 599).name).toBe("dying");
-    expect(advance(d, 600)).toEqual({ name: "over", since: 600 });
+    expect(advance(d, 600)).toEqual({ name: "blame", since: 600 });
     expect(visibleAt({ name: "playing", since: 0 }, 50)).toBe(true);
+  });
+
+  it("blame shows 6 s then returns to the lobby; skippable after 1.5 s", () => {
+    const b = { name: "blame", since: 1000 } as const;
+    expect(BLAME_MS).toBe(6000);
+    expect(advance(b, 6999)).toBe(b);
+    expect(advance(b, 7000)).toEqual({ name: "lobby", since: 7000 });
+    expect(canSkip(b, 2499)).toBe(false);
+    expect(canSkip(b, 2500)).toBe(true);
+    expect(canSkip(lobby(0), 1e9)).toBe(false);
   });
 });

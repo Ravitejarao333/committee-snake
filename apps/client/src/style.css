@@ -14,8 +14,22 @@
   --font-px: "Press Start 2P", ui-monospace, monospace;
   --key-h: clamp(30px, 5.2vh, 46px);
   --key-gap: 5px;
-  /* Vertical chrome around the LCD slot on desktop (page margin, earpiece, bezel, status, keypad, chin). */
-  --chrome-v: calc(16px + 24px + 24px + 22px + 4 * var(--key-h) + 3 * var(--key-gap) + 12px + 18px);
+  --status-h: 22px;
+  --roster-h: 18px;
+  /* Vertical chrome around the LCD slot on desktop (page margin, earpiece, bezel, status, roster, keypad, chin). */
+  --chrome-v: calc(
+    16px +
+    24px +
+    24px +
+    var(--status-h) +
+    var(--roster-h) +
+    4 *
+    var(--key-h) +
+    3 *
+    var(--key-gap) +
+    12px +
+    18px
+  );
   color-scheme: dark;
 }
 
@@ -50,7 +64,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  width: min(calc(100vw - 32px), calc(var(--slot-h) * 32 / 22 + 68px));
+  width: min(calc(100vw - 32px), calc(var(--slot-h) * 36 / 26 + 68px));
   height: calc(100dvh - 16px);
   padding: 0 22px;
   border-radius: 56px 56px 72px 72px / 44px 44px 96px 96px;
@@ -109,7 +123,7 @@ body {
 }
 
 .status {
-  flex: 0 0 22px;
+  flex: 0 0 var(--status-h);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -178,6 +192,56 @@ body {
   width: 0;
   min-width: 1px;
   background: currentColor;
+}
+
+/* Roster strip: one entry per hot seat, on the LCD colour. */
+.roster {
+  flex: 0 0 var(--roster-h);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--lcd-px);
+  font: 8px / 1 var(--font-px);
+  user-select: none;
+}
+.seat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.seat.asleep {
+  opacity: 0.4;
+}
+.seat b {
+  font-weight: normal;
+}
+.seat i {
+  font-style: normal;
+}
+.av {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+.arr {
+  width: 5px;
+  height: 5px;
+  fill: currentColor;
+}
+.arr.pend {
+  opacity: 0.4;
+}
+.arr-R {
+  transform: rotate(90deg);
+}
+.arr-D {
+  transform: rotate(180deg);
+}
+.arr-L {
+  transform: rotate(-90deg);
 }
 
 .lcd-slot {
@@ -277,17 +341,27 @@ body {
   transform: rotate(90deg);
 }
 
-/* Live vote (queue head) glows; the queued press shows dimly (ADR 0007). .lit wins while held. */
+/* The local majority glows (every tied direction). .lit wins while held. */
 .key.vote-head {
   box-shadow:
     0 2px 0 #6d7269,
     0 0 0 2px var(--lcd-bg),
     0 0 12px rgb(199 240 216 / 0.45);
 }
-.key.vote-pending {
-  box-shadow:
-    0 2px 0 #6d7269,
-    0 0 0 2px rgb(199 240 216 / 0.35);
+
+/* Avatar dots for the seats whose live vote is on this key. */
+.key-dots {
+  position: absolute;
+  top: 4px;
+  right: 12px;
+  display: flex;
+  gap: 2px;
+  pointer-events: none;
+}
+.key-dots .dot {
+  width: var(--dot-px, 7px);
+  height: var(--dot-px, 7px);
+  fill: currentColor;
 }
 
 .key.lit {
@@ -350,11 +424,15 @@ body {
   }
   .lcd-slot {
     flex: 0 1 auto;
-    height: min(calc(100vw * 22 / 32), calc(100dvh - 22px - 4 * 64px - 3 * 8px - 48px));
+    height: min(
+      calc(100vw * 26 / 36),
+      calc(100dvh - var(--status-h) - var(--roster-h) - 4 * 64px - 3 * 8px - 48px)
+    );
   }
   .keypad {
     --key-h: 64px;
     --key-gap: 8px;
+    --dot-px: 14px;
     width: min(100% - 24px, 340px);
     /* Centred in the space left under the LCD, so there's no dead gap. */
     margin: auto;
@@ -395,4 +473,14 @@ body {
   .key {
     transition: none;
   }
+}
+
+/* Screen-reader only: the live region that reads out the Blame Screen. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

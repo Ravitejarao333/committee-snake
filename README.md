@@ -47,18 +47,30 @@ scripts/           setup-github.sh (one-time repo bootstrap)
 
 ## Controls
 
-Every input lights the matching key on the on-screen keypad. Your vote stands until you change it, and expires after 4 seconds without a key press.
+Every input lights the matching key on the on-screen keypad. Your vote stands until you change it, and expires after 4 seconds without a key press. Two quick presses queue up as two turns ([ADR 0007](docs/adr/0007-two-deep-vote-queue.md)).
 
-| Input | Up | Left | Right | Down | Other |
-| --- | --- | --- | --- | --- | --- |
-| Arrow keys | ↑ | ← | → | ↓ | |
-| WASD | W | A | D | S | |
-| Number row (phone layout) | 2 | 4 | 6 | 8 | |
-| Numpad (follows its printed arrows) | 8 | 4 | 6 | 2 | |
-| On-screen keypad (click or tap) | 2 | 4 | 6 | 8 | 5 = emotes (coming soon) |
-| Sound | | | | | `*` or `M` toggles mute (off by default on touch devices) |
+| Seat | Up | Left | Right | Down |
+| --- | --- | --- | --- | --- |
+| P1 `ARROWS`: arrow keys, or the on-screen keypad (click or tap 2/4/6/8) | ↑ | ← | → | ↓ |
+| P2 `WASD` | W | A | D | S |
+| P3 `IJKL` | I | J | L | K |
+| P4 `NUMPAD`: numpad (follows its printed arrows) | 8 | 4 | 6 | 2 |
+| P4 `NUMPAD`: number row (phone layout) | 2 | 4 | 6 | 8 |
+
+| Key | Does |
+| --- | --- |
+| Enter or Space | Start the round from the lobby (on touch: tap the screen) |
+| `*` or `M` | Toggle sound (off by default on touch devices) |
+| `S` or the SHARE soft key | On the Blame Screen: share it as a PNG (native share sheet, or a download) |
+| Ctrl/Cmd+C | On the Blame Screen: copy the PNG to the clipboard, where the browser supports it |
+| Any other key | On the Blame Screen, after 1.5 s: skip back to the lobby |
+| 5 | Emotes (coming soon) |
 
 The number row and the numpad disagree on purpose. On a phone keypad, 2 is the top row, so it means up. On a numpad, 8 is the top row and carries the ↑ legend.
+
+### How to play with friends on one keyboard
+
+Up to four people can share one laptop. In the lobby, each of you presses any key from your own set to take a seat: arrows, WASD, IJKL, or the numpad (the number row also works for P4). The roster under the status bar shows each seat's avatar, name and current vote. Press Enter to start, or wait 5 seconds after the second seat joins. Each vote stands until you change it, the bars around the screen show the argument live, and the majority steers. When the snake dies, the Blame Screen names who voted for the fatal move. Press `S` to share it. Seats are kept between rounds; reload the page to clear them.
 
 ## Getting started
 
@@ -93,8 +105,8 @@ The Deploy workflow is skipped until you add the `CLOUDFLARE_API_TOKEN` and `CLO
 | --- | --- | --- |
 | M0 | Pure sim + tests | ✅ |
 | M1 | Local single-player with LCD look, keypad, beeps | ✅ |
-| M2 | Hot-seat committee: 4 people, one keyboard, Blame Screen | 🔜 |
-| M3 | Private rooms online | |
+| M2 | Hot-seat committee: 4 people, one keyboard, tally bars, Blame Screen | ✅ |
+| M3 | Private rooms online | 🔜 |
 | M4 | Public rooms, ghost voters, spectators | |
 | M5 | Polish: awards, captions, PNG share, emotes, reconnect | |
 | M6 | Launch | |

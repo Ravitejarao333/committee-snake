@@ -3,17 +3,13 @@ import type { LcdLayout } from "./layout";
 import { COLS, cellOrigin, drawBitmap } from "./lcd";
 import {
   type Bitmap,
-  BODY_A,
-  BODY_B,
-  CORNER,
   CRITTER,
-  cellSprite,
   DIGITS,
   FOOD,
-  HEAD,
-  HEAD_OPEN,
   rotate,
-  TAIL,
+  SNAKE_SPRITES,
+  SNAKE_STYLE,
+  type SnakeStyle,
 } from "./sprites";
 
 /** What the board renderer needs from a game state. */
@@ -38,33 +34,36 @@ const CORNER_TURN: Readonly<Record<string, Dir>> = { DL: "R", LU: "D", RU: "L", 
 
 const at = (c: Cell | undefined, x: number, y: number): boolean => !!c && c[0] === x && c[1] === y;
 
-/** The 3x3 core for segment `i` and the sides it links to. */
-function segmentCore(view: BoardView, i: number, mouthOpen: boolean): [Bitmap, Dir[]] {
+/**
+ * The 4x4 sprite for segment `i` of the snake (head first): the right-facing part rotated to
+ * its sides, then placed in the cell by the chosen style.
+ */
+export function segmentSprite(
+  view: BoardView,
+  i: number,
+  mouthOpen: boolean,
+  style: SnakeStyle = SNAKE_STYLE,
+): Bitmap {
+  const set = SNAKE_SPRITES[style];
   const s = view.snake;
   const cell = s[i];
-  if (!cell) return [[], []];
+  if (!cell) return [];
   const toHead = s[i - 1];
   const toTail = s[i + 1];
   const neck = toTail ? sideOf(cell, toTail) : null;
-  if (i === 0) return [rotate(mouthOpen ? HEAD_OPEN : HEAD, view.dir), neck ? [neck] : []];
-  if (!toHead) return [[], []];
+  if (i === 0)
+    return set.place(rotate(mouthOpen ? set.HEAD_OPEN : set.HEAD, view.dir), neck ? [neck] : []);
+  if (!toHead) return [];
   const a = sideOf(cell, toHead);
-  if (!neck) return [rotate(TAIL, a), [a]];
+  if (!neck) return set.place(rotate(set.TAIL, a), [a]);
   const straight = (a === "L" || a === "R") === (neck === "L" || neck === "R");
   if (straight) {
     // Alternate the notch per segment; tick - i is stable for a segment as it moves.
-    const body = ((view.tick - i) & 1) === 0 ? BODY_A : BODY_B;
-    return [rotate(body, a === "L" || a === "R" ? "R" : "D"), [a, neck]];
+    const body = ((view.tick - i) & 1) === 0 ? set.BODY_A : set.BODY_B;
+    return set.place(rotate(body, a === "L" || a === "R" ? "R" : "D"), [a, neck]);
   }
   const key = [a, neck].sort().join("");
-  return [rotate(CORNER, CORNER_TURN[key] ?? "R"), [a, neck]];
-}
-
-/** The 4x4 sprite for segment `i` of the snake (head first). */
-export function segmentSprite(view: BoardView, i: number, mouthOpen: boolean): Bitmap {
-  const [core, links] = segmentCore(view, i, mouthOpen);
-  if (core.length === 0) return [];
-  return cellSprite(core, { right: links.includes("R"), down: links.includes("D") });
+  return set.place(rotate(set.CORNER, CORNER_TURN[key] ?? "R"), [a, neck]);
 }
 
 /** True when the head is about to bite food or the critter (cosmetic look-ahead). */
