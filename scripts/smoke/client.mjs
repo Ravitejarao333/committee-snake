@@ -158,11 +158,17 @@ async function press(cdp, key, modifiers = 0) {
   await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", ...base });
 }
 async function touchAt(cdp, selector) {
-  const r = await evaluate(
-    cdp,
-    `(() => { const b = document.querySelector(${JSON.stringify(selector)})?.getBoundingClientRect();
-      return b ? { x: b.x + b.width / 2, y: b.y + b.height / 2 } : null; })()`,
-  );
+  // Pass the selector as a CDP argument rather than splicing it into evaluated code.
+  const { result: doc } = await cdp.send("Runtime.evaluate", { expression: "document" });
+  const { result, exceptionDetails } = await cdp.send("Runtime.callFunctionOn", {
+    objectId: doc.objectId,
+    functionDeclaration: `function (sel) { const b = this.querySelector(sel)?.getBoundingClientRect();
+      return b ? { x: b.x + b.width / 2, y: b.y + b.height / 2 } : null; }`,
+    arguments: [{ value: selector }],
+    returnByValue: true,
+  });
+  if (exceptionDetails) throw new Error(exceptionDetails.text);
+  const r = result.value;
   if (!r) throw new Error(`nothing at ${selector}`);
   await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [r] });
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
