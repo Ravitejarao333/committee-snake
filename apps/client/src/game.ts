@@ -4,12 +4,15 @@ import {
   countVotes,
   createGame,
   currentTps,
+  DEFAULT_RULES,
   type Dir,
   expireVotes,
   type GameState,
+  leading,
   mulberry32,
   nextTickDelayMs,
   type PlayerId,
+  type PlayerRoundStats,
   pushVote,
   type Rng,
   recordTick,
@@ -35,7 +38,7 @@ import {
   visibleAt,
 } from "./phase";
 import { createBarsPainter } from "./render/bars-draw";
-import { fitBlame, lineText, softkeyRect } from "./render/blame";
+import { blameSpeech, fitBlame, lineText, softkeyRect } from "./render/blame";
 import { drawBlame } from "./render/blame-draw";
 import type { LcdLayout } from "./render/layout";
 import {
@@ -49,7 +52,7 @@ import {
 } from "./render/lcd";
 import type { Phone } from "./render/phone";
 import { type BoardView, drawBoard, segmentSprite } from "./render/snake";
-import { keyVoters, leaders, rosterEntries } from "./roster";
+import { keyVoters, rosterEntries } from "./roster";
 import { runDueTicks } from "./scheduler";
 import { autoStartAt, claim, lobbyText, MAX_SEATS, type Seat, type Seats, seatIds } from "./seats";
 import { type CopyResult, copyPng, renderShare, type ShareResult, sharePng } from "./share-browser";
@@ -124,7 +127,7 @@ interface Driver {
 export function createDriver(lcd: Lcd, phone: Phone, audio: Audio): Driver {
   let phase: Phase = lobby(performance.now());
   let state: GameState | null = null;
-  // One mulberry32 stream per round, used only by createGame/step (ADR 0005).
+  // One mulberry32 stream per round: createGame, step, then one caption draw (ADR 0005).
   let rng: Rng = mulberry32(0);
   let votes = new Map<PlayerId, VoteQueue>();
   let seats: Seats = [];
@@ -143,7 +146,7 @@ export function createDriver(lcd: Lcd, phone: Phone, audio: Audio): Driver {
   let lastShare: ShareResult | null = null;
   let lastCopy: CopyResult | null = null;
   // Round stats for awards.
-  let stats = new Map();
+  let stats = new Map<PlayerId, PlayerRoundStats>();
 
   lcd.onChange(() => {
     dirty = true;
@@ -154,7 +157,7 @@ export function createDriver(lcd: Lcd, phone: Phone, audio: Audio): Driver {
     const live = state?.alive ? expireVotes(votes, now).live : new Map<PlayerId, never>();
     bars = countVotes(live, state?.dir ?? "R");
     phone.setRoster(rosterEntries(seats, votes, live));
-    phone.showVotes(leaders(bars), keyVoters(seats, live));
+    phone.showVotes(leading(bars.counts, DEFAULT_RULES.mode), keyVoters(seats, live));
   };
 
   const barsLayer: Layer = (ctx, l, now) =>
@@ -184,7 +187,8 @@ export function createDriver(lcd: Lcd, phone: Phone, audio: Audio): Driver {
     blame = null;
     lastShare = null;
     lastCopy = null;
-    stats = new Map();
+    phone.announce("");
+    stats = new Map<PlayerId, PlayerRoundStats>();
     phase = countdown(now);
     dirty = true;
     showVotes(now);
@@ -207,6 +211,7 @@ export function createDriver(lcd: Lcd, phone: Phone, audio: Audio): Driver {
         audio.play("death");
         // Generate the blame report immediately.
         blame = blameReport({ state: next, fatal: e.tally, finalVotes: live.live, stats }, rng);
+        phone.announce(blameSpeech(blame, new Map(seats.map((s) => [s.id, s.name]))));
         phase = dying(now);
       }
     }
@@ -246,15 +251,7 @@ export function createDriver(lcd: Lcd, phone: Phone, audio: Audio): Driver {
       }
       return false;
     }
-    if (phase.name === "blame" && canSkip(phase, now)) {
-      if (!repeat) phase = lobby(now);
-      dirty = true;
-      return true;
-    }
-    if (a.kind === "start" && canStart(phase)) {
-      if (!repeat) startNow(now);
-      return true;
-    }
+    // Share before skip, so S shares for the whole Blame Screen, not only its first 1.5 s.
     if (phase.name === "blame" && isShareKey(a)) {
       if (blame) {
         const names = new Map(seats.map((s) => [s.id, s.name]));
@@ -262,6 +259,15 @@ export function createDriver(lcd: Lcd, phone: Phone, audio: Audio): Driver {
           lastShare = result;
         });
       }
+      return true;
+    }
+    if (phase.name === "blame" && canSkip(phase, now)) {
+      if (!repeat) phase = lobby(now);
+      dirty = true;
+      return true;
+    }
+    if (a.kind === "start" && canStart(phase)) {
+      if (!repeat) startNow(now);
       return true;
     }
     if (a.kind !== "vote") return true;

@@ -26,7 +26,7 @@ export interface BlameFit {
 
 const WORD: Readonly<Record<Dir, string>> = { U: "UP", D: "DOWN", L: "LEFT", R: "RIGHT" };
 const FATAL = "FATAL";
-export const SOFTKEY = "SHARE";
+const SOFTKEY = "SHARE";
 /** Avatars shown per award row. */
 const AWARD_AVATARS = 3;
 const MAX_SIZE = 64;
@@ -121,6 +121,18 @@ export function blameLines(
   lines.push({ kind: "blank" }, { kind: "caption", text: r.caption });
   lines.push({ kind: "softkey", text: SOFTKEY });
   return lines;
+}
+
+/** The Blame Screen as one sentence-per-row string for a screen reader's live region. */
+export function blameSpeech(r: BlameReport, names: ReadonlyMap<PlayerId, string>): string {
+  const rows = blameLines(r, names, 200)
+    .filter((l) => l.kind !== "blank" && l.kind !== "softkey")
+    .map((l) =>
+      lineText(l)
+        .replace(/\s+/g, " ")
+        .replace(/[.!?]$/, ""),
+    );
+  return `${[...rows, "Press S or tap SHARE to share"].join(". ")}.`;
 }
 
 /** Greedy word wrap to `cols`; a word longer than a line is cut. */

@@ -67,6 +67,16 @@ describe("pickAwards", () => {
     expect(awards.find((x) => x.id === "napper")?.players).toEqual(["c"]);
   });
 
+  it("names every seat tied for the longest nap", () => {
+    const stats = new Map([
+      ["a", stat(2, 2, 15)],
+      ["b", stat(1, 0, 9)],
+      ["c", stat(1, 0, 15)],
+    ]);
+    const awards = pickAwards(fatal, stats, votes({ a: "L", b: "L", c: "U" }));
+    expect(awards.find((x) => x.id === "napper")?.players).toEqual(["a", "c"]);
+  });
+
   it("follows the priority order with every award available", () => {
     const stats = new Map([
       ["a", stat(10, 9)],

@@ -6,7 +6,7 @@ export const SHARE_H = 630;
 const FOOTER_H = 70;
 const MARGIN = 20;
 
-export interface ShareLayout {
+interface ShareLayout {
   /** Where the Blame Screen is fitted (fitBlame + drawBlame). */
   area: Rect;
   footer: Rect;

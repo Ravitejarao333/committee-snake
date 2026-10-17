@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mulberry32 } from "./rng";
-import { countVotes, tally } from "./tally";
+import { countVotes, leading, tally } from "./tally";
 import type { Dir, PlayerId } from "./types";
 
 const votes = (entries: Record<PlayerId, Dir>) => new Map(Object.entries(entries));
@@ -105,5 +105,35 @@ describe("countVotes", () => {
     expect(draws).toBe(0);
     tally(votes({ a: "U", b: "D" }), "R", "democracy", spy);
     expect(draws).toBe(1);
+  });
+});
+
+describe("leading", () => {
+  const counts = (live: Record<PlayerId, Dir>) => countVotes(votes(live), "R").counts;
+
+  it("democracy: every direction tied for the most votes", () => {
+    expect(leading(counts({ a: "U", b: "D", c: "U", d: "D", e: "R" }), "democracy")).toEqual([
+      "U",
+      "D",
+    ]);
+    expect(leading(counts({ a: "U", b: "U", c: "R" }), "democracy")).toEqual(["U"]);
+  });
+
+  it("chaos: every direction tied for the fewest non-zero votes", () => {
+    expect(leading(counts({ a: "U", b: "U", c: "R", d: "D" }), "chaos")).toEqual(["D", "R"]);
+  });
+
+  it("is empty with no votes or only reverse votes", () => {
+    expect(leading(counts({}), "democracy")).toEqual([]);
+    expect(leading(counts({ a: "L" }), "chaos")).toEqual([]);
+  });
+
+  it("agrees with tally's winner whenever there is no tie", () => {
+    const live = votes({ a: "U", b: "U", c: "R" });
+    for (const mode of ["democracy", "chaos"] as const) {
+      expect(leading(countVotes(live, "R").counts, mode)).toEqual([
+        tally(live, "R", mode, mulberry32(1)).winner,
+      ]);
+    }
   });
 });

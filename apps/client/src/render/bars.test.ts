@@ -95,16 +95,16 @@ describe("barSlots", () => {
           expect(ints(r)).toBe(true);
           expect(overlap(r, glyph)).toBe(false);
         }
-        for (let i = 1; i < rects.length; i++) {
-          const a = rects[i - 1]!;
-          const b = rects[i]!;
-          expect(overlap(a, b)).toBe(false);
+        const [first, ...rest] = rects;
+        if (!first) throw new Error("no slots");
+        let last = first;
+        for (const b of rest) {
+          expect(overlap(last, b)).toBe(false);
           // 1 unit apart along the bar.
-          expect(b.x - a.x + (b.y - a.y)).toBe(8 * unit);
+          expect(b.x - last.x + (b.y - last.y)).toBe(8 * unit);
+          last = b;
         }
         // Centred on the bar's midpoint (within a device px).
-        const first = rects[0]!;
-        const last = rects[rects.length - 1]!;
         const horizontal = bar.dir === "U" || bar.dir === "D";
         const lo = horizontal ? first.x - bar.band.x : first.y - bar.band.y;
         const hi = horizontal

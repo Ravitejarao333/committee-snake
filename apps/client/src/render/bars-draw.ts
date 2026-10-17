@@ -17,7 +17,7 @@ import { drawBitmap } from "./lcd";
 import { type Bitmap, DIGITS, GLYPH, rotate } from "./sprites";
 
 /** What the bars show this frame. */
-export interface BarsFrame {
+interface BarsFrame {
   count: VoteCount;
   /** Seat order, for lining avatars up. */
   order: readonly PlayerId[];

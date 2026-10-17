@@ -1,11 +1,4 @@
-import {
-  DIRS,
-  type Dir,
-  type PlayerId,
-  type VoteCount,
-  type VoteMap,
-  type VoteQueue,
-} from "@committee-snake/shared";
+import type { Dir, PlayerId, VoteMap, VoteQueue } from "@committee-snake/shared";
 import type { Seats } from "./seats";
 
 /** One seat in the roster strip. */
@@ -30,12 +23,6 @@ export function rosterEntries(
     const pending = head === null ? null : (votes.get(id)?.pending?.dir ?? null);
     return { id, name, head, pending, asleep: head === null };
   });
-}
-
-/** Directions with the most live votes (all of them on a tie); empty when nobody voted. */
-export function leaders(c: VoteCount): Dir[] {
-  const top = Math.max(...DIRS.map((d) => c.counts[d]));
-  return top > 0 ? DIRS.filter((d) => c.counts[d] === top) : [];
 }
 
 /** Keypad dots: who has their live vote on each key, in seat order, at most `max` per key. */

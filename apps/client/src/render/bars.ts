@@ -80,13 +80,7 @@ export function barsLayout(l: LcdLayout, g: Grid): BarsLayout {
 }
 
 /** A rect `along` the bar and `across` it from the band's outer edge. */
-export function place(
-  b: Bar,
-  along: number,
-  across: number,
-  alongLen: number,
-  acrossLen: number,
-): Rect {
+function place(b: Bar, along: number, across: number, alongLen: number, acrossLen: number): Rect {
   const { x, y, w, h } = b.band;
   switch (b.dir) {
     case "U":

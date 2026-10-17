@@ -43,6 +43,19 @@ export function countVotes(live: VoteMap, current: Dir): VoteCount {
 }
 
 /**
+ * The directions tied for the win under `mode`, before the tie-break: democracy takes the most
+ * votes, chaos the fewest non-zero. Empty when nobody cast a counting vote. RNG-free, so the
+ * client can show the current leaders (keypad glow) without re-implementing the rule.
+ */
+export function leading(counts: Readonly<Record<Dir, number>>, mode: Mode): Dir[] {
+  const voted = DIRS.filter((d) => counts[d] > 0);
+  if (voted.length === 0) return [];
+  const pick = mode === "chaos" ? Math.min : Math.max;
+  const target = pick(...voted.map((d) => counts[d]));
+  return voted.filter((d) => counts[d] === target);
+}
+
+/**
  * Count standing votes and pick the direction for this tick.
  *
  * Rules (see docs/PLAN.md §3.2):
@@ -54,14 +67,10 @@ export function countVotes(live: VoteMap, current: Dir): VoteCount {
 export function tally(votes: VoteMap, current: Dir, mode: Mode, rng: Rng): Tally {
   const { counts, nonsense, nonsenseBy, byDir } = countVotes(votes, current);
 
-  const voted = DIRS.filter((d) => counts[d] > 0);
-  if (voted.length === 0) {
+  const tied = leading(counts, mode);
+  if (tied.length === 0) {
     return { counts, nonsense, nonsenseBy, winner: current, winners: [] };
   }
-
-  const pick = mode === "chaos" ? Math.min : Math.max;
-  const target = pick(...voted.map((d) => counts[d]));
-  const tied = voted.filter((d) => counts[d] === target);
 
   let winner: Dir;
   if (tied.length === 1) {

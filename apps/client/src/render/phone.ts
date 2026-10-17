@@ -19,6 +19,8 @@ export interface Phone {
   setRoster(entries: readonly RosterEntry[]): void;
   setMuted(muted: boolean): void;
   setCapacity(n: number, max: number): void;
+  /** Read `text` out through a polite live region (the canvas itself is one opaque image). */
+  announce(text: string): void;
 }
 
 interface KeySpec {
@@ -88,6 +90,7 @@ const TEMPLATE = `
       </div>
       <div class="roster" role="list" aria-label="Players"></div>
       <div class="lcd-slot"><canvas id="lcd" role="img" aria-label="Snake game screen"></canvas></div>
+      <p class="sr-only" aria-live="polite"></p>
     </div>
   </div>
   <div class="keypad" role="group" aria-label="Keypad">${KEYS.map(keyHtml).join("")}</div>
@@ -109,6 +112,7 @@ export function createPhone(app: HTMLElement): Phone {
   const battery = must(app, ".battery i", HTMLElement);
   const cap = must(app, ".cap", HTMLElement);
   const roster = must(app, ".roster", HTMLElement);
+  const live = must(app, ".sr-only", HTMLElement);
   /** Last rendered markup per element, so unchanged frames don't touch the DOM. */
   const shown = new Map<Element, string>();
   const html = (el: Element, markup: string): void => {
@@ -150,6 +154,9 @@ export function createPhone(app: HTMLElement): Phone {
     setCapacity(n, max) {
       cap.textContent = `${n}/${max}`;
       battery.style.width = `${Math.round((Math.min(n, max) / max) * 100)}%`;
+    },
+    announce(text) {
+      live.textContent = text;
     },
   };
 }

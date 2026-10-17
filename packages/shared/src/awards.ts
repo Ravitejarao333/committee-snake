@@ -62,6 +62,7 @@ export function pickAwards(
       else if (ratio === worstAgree) contrarian.push(pid);
     }
     if (s.longestNapTicks > longestNap) [longestNap, nappers] = [s.longestNapTicks, [pid]];
+    else if (s.longestNapTicks === longestNap && longestNap > 0) nappers.push(pid);
   }
   if (agreeable.length > 0)
     awards.push({ id: "agreeable", title: "Most Agreeable", players: agreeable });

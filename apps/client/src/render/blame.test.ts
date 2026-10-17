@@ -1,6 +1,15 @@
 import type { BlameReport } from "@committee-snake/shared";
 import { describe, expect, it } from "vitest";
-import { blameLines, fitBlame, lineCols, lineText, nameList, softkeyRect, wrap } from "./blame";
+import {
+  blameLines,
+  blameSpeech,
+  fitBlame,
+  lineCols,
+  lineText,
+  nameList,
+  softkeyRect,
+  wrap,
+} from "./blame";
 
 const NAMES = new Map([
   ["p1", "ARROWS"],
@@ -126,5 +135,16 @@ describe("wrap", () => {
   it("wraps on spaces and cuts over-long words", () => {
     expect(wrap("the wall had one vote", 10)).toEqual(["the wall", "had one", "vote"]);
     expect(wrap("abcdefghijk", 4)).toEqual(["abcd"]);
+  });
+});
+
+describe("blameSpeech", () => {
+  it("reads every row once, with no softkey and no doubled stops", () => {
+    expect(blameSpeech({ ...REPORT, caption: "Greed. Always greed." }, NAMES)).toBe(
+      "GAME OVER. SCORE 48 LEN 21. THE COMMITTEE CHOSE: LEFT. LEFT 2 FATAL. UP 1. NONSENSE 1. " +
+        "ASSASSINS: ARROWS, WASD. TRIED TO SAVE IT: IJKL. VOTED BACKWARDS: NUMPAD. " +
+        "THE ASSASSIN: ARROWS, WASD. MOST AGREEABLE: IJKL. PROFESSIONAL NAPPER: NUMPAD. " +
+        "Greed. Always greed. Press S or tap SHARE to share.",
+    );
   });
 });

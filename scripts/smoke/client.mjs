@@ -51,7 +51,7 @@ const chrome = spawn(
 );
 const cleanup = () => {
   chrome.kill();
-  rmSync(profile, { recursive: true, force: true });
+  rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 };
 
 async function waitForDevtools() {
@@ -239,11 +239,18 @@ async function blame(cdp, sc) {
   const s = await waitFor(cdp, "blame screen", (x) => x.phase === "blame" && x.blame, 40_000);
   await sleep(400);
   await shot(cdp, `${sc.name}-blame`);
+  const spoken = await evaluate(cdp, "document.querySelector('[aria-live]')?.textContent ?? ''");
+  check(
+    spoken.startsWith("GAME OVER."),
+    `live region reads the Blame Screen (${spoken.length} chars)`,
+  );
   return s;
 }
 
 /** Share from the Blame Screen: `download` (no Web Share) or `native` (stubbed navigator.share). */
 async function share(cdp, sc) {
+  // Press S after the 1.5 s skip point: S must still share, not skip to the lobby.
+  await sleep(1_300);
   if (sc.share === "download") {
     await evaluate(cdp, "Object.defineProperty(navigator, 'canShare', { value: undefined }), true");
     const file = join(outDir, "committee-snake-blame.png");
@@ -252,6 +259,7 @@ async function share(cdp, sc) {
     const s = await waitFor(cdp, "share download", (x) => x.lastShare);
     for (let i = 0; i < 40 && !existsSync(file); i++) await sleep(100);
     const size = existsSync(file) ? pngSize(file) : null;
+    check(s.phase === "blame", `S after 1.5 s shares and stays on the Blame Screen (${s.phase})`);
     check(s.lastShare.via === "download", `share fell back to download (${s.lastShare.via})`);
     check(
       size?.w === 1200 && size?.h === 630,
@@ -273,6 +281,7 @@ async function share(cdp, sc) {
     );
     await press(cdp, "s");
     const s = await waitFor(cdp, "native share", (x) => x.lastShare);
+    check(s.phase === "blame", `S after 1.5 s shares and stays on the Blame Screen (${s.phase})`);
     const shared = await evaluate(cdp, "window.__shared ?? null");
     check(
       s.lastShare.via === "share" && shared?.n === 1 && shared.type === "image/png",
@@ -386,7 +395,7 @@ async function hotseat(cdp, sc) {
   if (sc.share) await share(cdp, sc);
 
   // Skip back to the lobby (after 1.5 s); seats survive the round.
-  await sleep(1_600);
+  if (!sc.share) await sleep(1_600);
   await press(cdp, "x");
   const back = await waitFor(cdp, "lobby again", (s) => s.phase === "lobby", 5_000);
   check(back.seats?.length === 3, `seats kept in the lobby (${back.seats?.length})`);
@@ -422,13 +431,14 @@ try {
   });
   for (const domain of ["Page", "Runtime", "Log"]) await cdp.send(`${domain}.enable`);
   for (const sc of SCENARIOS) await play(cdp, sc, problems);
-  for (const p of problems) say(`  ! ${p}`);
   cdp.close();
   browser.close();
 } catch (err) {
   failures.push(String(err));
   say(`  FAIL ${err}`);
 } finally {
+  // Print page errors even when a scenario aborted: they usually explain the timeout.
+  for (const p of problems) say(`  ! ${p}`);
   cleanup();
 }
 say(failures.length ? `\n${failures.length} check(s) failed` : "\nall checks passed");
