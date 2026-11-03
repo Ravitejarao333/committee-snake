@@ -74,7 +74,7 @@ Up to four people can share one laptop. In the lobby, each of you presses any ke
 
 ## Getting started
 
-Requires **Node 24** (see `.nvmrc`; the minimum is **22.15**, because `scripts/replay.ts` uses `module.registerHooks`) and **pnpm** (`corepack enable` gives you the pinned version).
+Requires **Node 24** (see `.nvmrc`; the minimum is **22.22.1**, which lint-staged 17 requires; `scripts/replay.ts` needs 22.15+ for `module.registerHooks`) and **pnpm** (`corepack enable` gives you the pinned version).
 
 ```bash
 pnpm install          # also installs git hooks via husky

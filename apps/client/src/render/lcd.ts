@@ -44,7 +44,7 @@ export type Overlay = { kind: "text"; lines: readonly string[] } | { kind: "digi
 /** Something drawn every frame on top of the board layer (bars, Blame Screen, toast). */
 export type Layer = (ctx: CanvasRenderingContext2D, layout: LcdLayout, now: number) => void;
 
-export interface Frame {
+interface Frame {
   /** LCD contrast 0..1 (power-on ramp). */
   power: number;
   /** Show the tick-only board layer (off on the Blame Screen). */

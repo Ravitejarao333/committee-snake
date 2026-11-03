@@ -38,7 +38,7 @@ export interface BarsLayout {
   glyphUnit: number;
 }
 
-export interface Slot {
+interface Slot {
   id: PlayerId;
   x: number;
   y: number;
