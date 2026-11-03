@@ -1,4 +1,5 @@
 ---
+
 name: replay
 description: Bug-repro tool (docs/PLAN.md §6.3). Given a round seed and a per-tick vote log (JSON), replays the pure sim with scripts/replay.ts and prints the tick-by-tick state, events, death cause, fatal tally and final board. Use when a bug report or failing test includes a seed and votes, or to explain why a snake died.
 argument-hint: <log.json> | <seed> <votes-json>

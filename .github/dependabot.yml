@@ -13,7 +13,17 @@ updates:
     groups:
       dev-tooling:
         dependency-type: development
-        patterns: ["@biomejs/*", "vitest", "@vitest/*", "typescript", "knip", "husky", "lint-staged", "@commitlint/*"]
+        patterns:
+          [
+            "@biomejs/*",
+            "vitest",
+            "@vitest/*",
+            "typescript",
+            "knip",
+            "husky",
+            "lint-staged",
+            "@commitlint/*",
+          ]
       cloudflare:
         patterns: ["wrangler", "@cloudflare/*"]
       minor-and-patch:

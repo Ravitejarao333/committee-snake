@@ -1,4 +1,5 @@
 ---
+
 name: kickoff
 description: Session start. Prints milestone status from README, live /health, open PRs (with check status) and issues, the last 6 workflow runs, the latest CI/Deploy/Release results and the next milestone with its docs/PLAN.md §7 row, in under 30 lines. Run first in every new session; context does not carry over between sessions.
 allowed-tools: Bash(git *), Bash(gh *), Bash(curl *), Bash(grep *), Bash(awk *), Bash(test *), Bash(echo *), Bash(tr *)

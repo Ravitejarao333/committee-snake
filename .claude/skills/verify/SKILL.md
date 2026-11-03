@@ -1,4 +1,5 @@
 ---
+
 name: verify
 description: The definition of "done" for this repo. Runs pnpm check (Biome lint + tsc + Vitest), pnpm build (Vite + wrangler dry-run) and pnpm knip, then summarizes pass/fail per step. Use before saying any task is finished, before committing, and before opening a PR.
 allowed-tools: Bash(pnpm *)

@@ -1,6 +1,6 @@
 # Committee Snake — Build Plan
 
-**One line:** Classic phone Snake, except everyone in the room votes on where it turns, and the majority wins. **Tagline:** *Democracy was a mistake.* **Platform:** Browser, **desktop-first** (mobile works in v1, polished in v1.1), shareable link, nothing to install. **Target:** v1 playable online in \~3 weekends.
+**One line:** Classic phone Snake, except everyone in the room votes on where it turns, and the majority wins. **Tagline:** _Democracy was a mistake._ **Platform:** Browser, **desktop-first** (mobile works in v1, polished in v1.1), shareable link, nothing to install. **Target:** v1 playable online in \~3 weekends.
 
 ---
 
@@ -10,14 +10,14 @@ One snake per room. Every player holds a **standing vote** for UP, DOWN, LEFT or
 
 Two kinds of rooms:
 
-|  | Public Room | Private Room |
-| --- | --- | --- |
-| Who | Anyone on the internet | Friends with the link/code |
-| Join | One "Play Now" button | `snake.example/r/K7QP` or type 4-char code |
-| Rounds | Continuous; auto-restarts | Host presses Start |
-| Settings | Fixed (fair for strangers) | Host chooses mode, speed, walls, map |
-| Size | Max 24 voters + unlimited spectators per shard | Max 24 voters + spectators |
-| Lifetime | Always exists | Closes after 10 minutes empty |
+|          | Public Room                                    | Private Room                               |
+| -------- | ---------------------------------------------- | ------------------------------------------ |
+| Who      | Anyone on the internet                         | Friends with the link/code                 |
+| Join     | One "Play Now" button                          | `snake.example/r/K7QP` or type 4-char code |
+| Rounds   | Continuous; auto-restarts                      | Host presses Start                         |
+| Settings | Fixed (fair for strangers)                     | Host chooses mode, speed, walls, map       |
+| Size     | Max 24 voters + unlimited spectators per shard | Max 24 voters + spectators                 |
+| Lifetime | Always exists                                  | Closes after 10 minutes empty              |
 
 ---
 
@@ -34,10 +34,10 @@ We evoke the monochrome phone-LCD era **without copying any brand**. Nothing bel
 - **Grid:** 32 × 20 cells. Bigger than the original phone screen, because 20 people need room to argue, but the same chunky look.
 - **Cell rendering:** each cell is drawn as a square with a 1px gap. The snake body uses the classic "segment with a notch" style. The head is a slightly different shape with an eye pixel, and the mouth opens one frame before eating.
 - **LCD effects (subtle, toggleable):**
-  - *Ghosting:* the tail end leaves a faint 120ms afterimage, like slow LCD response.
-  - *Contrast flicker:* at game start, the screen "powers on" from blank to full contrast over 300ms.
-  - *Scanline shimmer:* 2% opacity horizontal bands drifting slowly. This is your "wave" animation, done subtly.
-- **Font:** a pixel font, e.g. *Press Start 2P* or *VT323* (both Google Fonts, open licence). Scores and the HUD use it.
+  - _Ghosting:_ the tail end leaves a faint 120ms afterimage, like slow LCD response.
+  - _Contrast flicker:_ at game start, the screen "powers on" from blank to full contrast over 300ms.
+  - _Scanline shimmer:_ 2% opacity horizontal bands drifting slowly. This is your "wave" animation, done subtly.
+- **Font:** a pixel font, e.g. _Press Start 2P_ or _VT323_ (both Google Fonts, open licence). Scores and the HUD use it.
 
 ### 2.2 The phone frame (desktop)
 
@@ -46,12 +46,12 @@ The game screen sits inside a drawn, chunky candybar-phone body (original design
 - A **keypad** below the screen. Keys **2 / 4 / 6 / 8** are the vote buttons, exactly like the old control scheme, and they light up when pressed.
 - **Keyboard mapping:** arrow keys, WASD, the number row's 2/4/6/8 and the numpad all vote, and every press lights the matching on-screen key. (Most laptops have no numpad, so arrows are the real default; the keypad glow keeps the nostalgia.)
 - **Desktop layout:** the phone sits centred and large. A **roster panel** on the left lists every player with their avatar and current vote. A **feed panel** on the right shows the last 5 Blame Screens as mini cards and a live emote stream. Below 1000px wide, both panels collapse into tabs.
-- **5** = emote wheel. ***** = mute. **#** = leave room.
+- **5** = emote wheel. **\*** = mute. **#** = leave room.
 - A fake signal-strength bar that shows real ping (4 bars \<80ms, 1 bar >300ms). Battery icon = room capacity.
 
 ### 2.3 Mobile (v1: works; v1.1: polished)
 
-**v1 bar:** someone tapping a WhatsApp link on a phone can join, vote and see the Blame Screen. The phone frame disappears (they're *holding* a phone), the LCD goes full-width, and a plain on-screen **2/4/6/8 keypad** sits under it. Side panels are hidden behind a roster button.
+**v1 bar:** someone tapping a WhatsApp link on a phone can join, vote and see the Blame Screen. The phone frame disappears (they're _holding_ a phone), the LCD goes full-width, and a plain on-screen **2/4/6/8 keypad** sits under it. Side panels are hidden behind a roster button.
 
 **v1.1:** swipe-to-vote, haptic tick on vote (`navigator.vibrate`), keypad sizing tuned on real devices, and native share-sheet polish.
 
@@ -59,14 +59,14 @@ The game screen sits inside a drawn, chunky candybar-phone body (original design
 
 Pure square-wave beeps made with the Web Audio API. No samples, no copyrighted tones.
 
-| Event | Sound |
-| --- | --- |
-| Your vote registered | 30ms blip at 880 Hz |
-| Snake turns | 20ms tick at 440 Hz |
-| Eat food | two-note up chirp (660 → 990 Hz) |
-| Bonus creature appears | 3 rapid beeps |
-| Death | descending 4-note "wah-wah" |
-| Blame screen reveal | single low "dun" |
+| Event                  | Sound                            |
+| ---------------------- | -------------------------------- |
+| Your vote registered   | 30ms blip at 880 Hz              |
+| Snake turns            | 20ms tick at 440 Hz              |
+| Eat food               | two-note up chirp (660 → 990 Hz) |
+| Bonus creature appears | 3 rapid beeps                    |
+| Death                  | descending 4-note "wah-wah"      |
+| Blame screen reveal    | single low "dun"                 |
 
 Sound is **off by default on mobile** and on after the first tap on desktop (browsers require a gesture anyway).
 
@@ -88,9 +88,9 @@ Sound is **off by default on mobile** and on after the first tap on desktop (bro
 
 ### 3.2 Voting: the heart of the game
 
-- **Standing votes.** Your vote *stays* until you change it. You don't have to mash every tick. This single decision matters most: per-tick voting at 3–8 Hz is impossible for humans and feels random rather than funny.
+- **Standing votes.** Your vote _stays_ until you change it. You don't have to mash every tick. This single decision matters most: per-tick voting at 3–8 Hz is impossible for humans and feels random rather than funny.
 - **Vote expiry.** A vote expires **4 seconds** after your last key press. Your seat goes grey ("napping"). This stops AFK players from silently steering.
-- **Vote queue.** Each player holds up to two presses: the live *head* and one *pending* direction (ADR 0007). When the head wins a tick, the pending press takes over, so Up-then-Left inside one tick turns Up and then Left on consecutive ticks, and Down-then-Left escapes the right wall. A third press replaces the pending one. A pending press that has become a reverse is dropped. A head that keeps losing keeps its place. Expiry counts from your latest press.
+- **Vote queue.** Each player holds up to two presses: the live _head_ and one _pending_ direction (ADR 0007). When the head wins a tick, the pending press takes over, so Up-then-Left inside one tick turns Up and then Left on consecutive ticks, and Down-then-Left escapes the right wall. A third press replaces the pending one. A pending press that has become a reverse is dropped. A head that keeps losing keeps its place. Expiry counts from your latest press.
 - **Reverse votes don't count.** A vote for the opposite of the current direction can't win (classic rule). It's shown in its own grey "🙃 nonsense" tally so everyone can see who's trolling.
 - **Tie-break:** if the current direction is among the tied winners, keep going straight. Otherwise pick among the tied directions with the seeded RNG (§6.3), so replays stay deterministic.
 - **No votes at all:** keep going straight.
@@ -108,12 +108,12 @@ Sound is **off by default on mobile** and on after the first tap on desktop (bro
 
 ### 3.5 Modes
 
-| Mode | Rule | Where |
-| --- | --- | --- |
-| **Democracy** | Majority wins | Public + private (default) |
-| **Chaos** | The **least** popular non-zero vote wins | Private; public every 5th round, announced in advance |
-| **Dictator** | One random player steers alone for 10s, then the crown passes; everyone sees who's in charge | Private (v1.1) |
-| **Two Snakes** | Room splits into two committees, each with its own snake, on one shared board | v2 |
+| Mode           | Rule                                                                                         | Where                                                 |
+| -------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| **Democracy**  | Majority wins                                                                                | Public + private (default)                            |
+| **Chaos**      | The **least** popular non-zero vote wins                                                     | Private; public every 5th round, announced in advance |
+| **Dictator**   | One random player steers alone for 10s, then the crown passes; everyone sees who's in charge | Private (v1.1)                                        |
+| **Two Snakes** | Room splits into two committees, each with its own snake, on one shared board                | v2                                                    |
 
 ### 3.6 Round flow
 
@@ -148,12 +148,12 @@ Shown for 6 seconds after every death:
 
 Below it, **awards** (pick 2–3 per round):
 
-- *The Assassin* — voted for the fatal move.
-- *The Contrarian* — most votes that lost.
-- *Most Agreeable* — highest % of their votes that won.
-- *Professional Napper* — longest expired-vote streak.
-- *Bug Hunter* — voted toward the bonus critter most.
-- *The Prophet* — voted against the fatal move.
+- _The Assassin_ — voted for the fatal move.
+- _The Contrarian_ — most votes that lost.
+- _Most Agreeable_ — highest % of their votes that won.
+- _Professional Napper_ — longest expired-vote streak.
+- _Bug Hunter_ — voted toward the bonus critter most.
+- _The Prophet_ — voted against the fatal move.
 
 Awards are picked in priority order: Assassin, Most Agreeable, Contrarian, Professional Napper, then Prophet (only to fill a gap), at most 3. Bug Hunter comes later. Players who voted the reverse direction are listed separately as "Voted backwards", not as savers or Prophets.
 
@@ -161,10 +161,10 @@ As implemented (`packages/shared/src/awards.ts`), a "vote" for the ratio awards 
 
 Plus a **funny caption** picked from a list keyed to how you died. Examples:
 
-- Hit wall at length \< 5: *"Committee formed. Committee dissolved."*
-- Ate own tail: *"Its own worst enemy. Like the committee."*
-- Died while chasing the bonus bug: *"Greed. Always greed."*
-- Chaos mode: *"Nobody wanted this. That's how it won."*
+- Hit wall at length \< 5: _"Committee formed. Committee dissolved."_
+- Ate own tail: _"Its own worst enemy. Like the committee."_
+- Died while chasing the bonus bug: _"Greed. Always greed."_
+- Chaos mode: _"Nobody wanted this. That's how it won."_
 
 A **Share** button exports the Blame Screen as a PNG via `canvas.toBlob()` and uses the native share sheet on mobile (`navigator.share`). This is the virality loop.
 
@@ -202,19 +202,19 @@ Snake is discrete, tiny and deterministic. That means:
 
 Why this over alternatives:
 
-| Option | Pros | Cons | Verdict |
-| --- | --- | --- | --- |
-| **Cloudflare Workers + Durable Objects** | Room-per-object is the exact shape of this game; no servers to manage; global edge (good India latency); a free tier exists | Cloudflare-specific APIs; learning curve | ✅ **Choose** |
-| Node + `ws` on a VPS | Simplest mental model | You manage scaling, restarts, TLS, a single region | Good fallback |
-| Colyseus | Built for rooms + matchmaking | Still needs hosting; heavier than needed | Overkill |
-| Firebase / Supabase Realtime | Fast to start | Not built for authoritative tick loops; would push game logic to clients | ❌ |
-| WebRTC peer-to-peer | No server cost | Host advantage, NAT pain, no public rooms | ❌ |
+| Option                                   | Pros                                                                                                                        | Cons                                                                     | Verdict       |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------- |
+| **Cloudflare Workers + Durable Objects** | Room-per-object is the exact shape of this game; no servers to manage; global edge (good India latency); a free tier exists | Cloudflare-specific APIs; learning curve                                 | ✅ **Choose** |
+| Node + `ws` on a VPS                     | Simplest mental model                                                                                                       | You manage scaling, restarts, TLS, a single region                       | Good fallback |
+| Colyseus                                 | Built for rooms + matchmaking                                                                                               | Still needs hosting; heavier than needed                                 | Overkill      |
+| Firebase / Supabase Realtime             | Fast to start                                                                                                               | Not built for authoritative tick loops; would push game logic to clients | ❌            |
+| WebRTC peer-to-peer                      | No server cost                                                                                                              | Host advantage, NAT pain, no public rooms                                | ❌            |
 
 Cost facts to plan around (from [Cloudflare's Durable Objects pricing page](https://developers.cloudflare.com/durable-objects/platform/pricing); re-check before launch, limits change):
 
 - Durable Objects work on the Workers Free plan, but only the SQLite-backed kind. That's fine for us.
 - Votes are cheap: incoming WebSocket messages are billed at a 20:1 ratio, and outgoing messages are free. Our heavy traffic (broadcasting state every tick) is outgoing.
-- **Caveat:** the WebSocket Hibernation API won't save money *during* a game. It only stops duration charges when no events are running, and a live game ticks 3–8 times a second, so the object stays awake. Rooms cost only while a game is actually running; empty rooms must stop ticking (§5.6).
+- **Caveat:** the WebSocket Hibernation API won't save money _during_ a game. It only stops duration charges when no events are running, and a live game ticks 3–8 times a second, so the object stays awake. Rooms cost only while a game is actually running; empty rooms must stop ticking (§5.6).
 - Upgrade path: the [Workers Paid plan](https://developers.cloudflare.com/workers/platform/pricing/) starts at $5/month and includes Durable Objects usage. Expect to need it only if the game takes off.
 
 ### 5.3 System diagram
@@ -241,7 +241,7 @@ Cost facts to plan around (from [Cloudflare's Durable Objects pricing page](http
 ### 5.4 Public room matchmaking
 
 - A single **Lobby DO** holds a list of public shards and their live voter counts (each shard reports every 5s).
-- **Fill-first assignment:** a new player goes to the *fullest* shard that is under 24 voters. Not round-robin. Busy rooms are fun and empty rooms are sad.
+- **Fill-first assignment:** a new player goes to the _fullest_ shard that is under 24 voters. Not round-robin. Busy rooms are fun and empty rooms are sad.
 - If every shard is full, create `public-N+1`.
 - If a shard drops to 0 for 2 minutes, it's retired.
 - Over 24 voters? You can still join as a **spectator** (you see everything and can emote, but can't vote) and you're first in line for the next free seat.
@@ -253,7 +253,7 @@ Cost facts to plan around (from [Cloudflare's Durable Objects pricing page](http
 The biggest risk at launch is someone clicking Play and finding an empty room. Mitigations:
 
 - If a public shard has \< 3 humans, add **ghost voters**, clearly labelled with a 👻 and a grey avatar. They vote semi-randomly: 60% toward food, 25% straight, 15% chaos. They're always disclosed and never counted in awards.
-- With 1 human, the HUD says *"You are the committee. Invite people to ruin it."* plus a copy-link button.
+- With 1 human, the HUD says _"You are the committee. Invite people to ruin it."_ plus a copy-link button.
 - Ghosts leave one at a time as humans arrive.
 
 ### 5.6 Room lifecycle
@@ -360,13 +360,13 @@ Each round gets a 32-bit seed. Food spawns, tie-breaks and ghost votes all come 
 
 ### 6.6 Abuse and limits
 
-| Threat | Defence |
-| --- | --- |
-| Vote spam | Votes are idempotent; the server keeps only the latest; over 20 msgs/s from one socket → disconnect |
-| Many tabs / bots | Max 3 connections per IP per room; ghost-like behaviour (perfect timing) isn't a real threat because a single vote barely matters |
-| Offensive names | Server-side filter (§4); "report name" via the emote wheel's long-press → after 3 reports the name becomes random |
-| Room-code guessing | Private rooms aren't secret-critical; rate-limit room creation to 10/hour per IP |
-| Oversized/malformed messages | zod validation, 512-byte cap |
+| Threat                       | Defence                                                                                                                           |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Vote spam                    | Votes are idempotent; the server keeps only the latest; over 20 msgs/s from one socket → disconnect                               |
+| Many tabs / bots             | Max 3 connections per IP per room; ghost-like behaviour (perfect timing) isn't a real threat because a single vote barely matters |
+| Offensive names              | Server-side filter (§4); "report name" via the emote wheel's long-press → after 3 reports the name becomes random                 |
+| Room-code guessing           | Private rooms aren't secret-critical; rate-limit room creation to 10/hour per IP                                                  |
+| Oversized/malformed messages | zod validation, 512-byte cap                                                                                                      |
 
 ### 6.7 Testing
 
@@ -391,15 +391,15 @@ Each round gets a 32-bit seed. Food spawns, tie-breaks and ghost votes all come 
 
 ## 7. Milestones
 
-| # | Goal | Done when | Est. |
-| --- | --- | --- | --- |
-| **M0** | Pure sim + tests | `step()` passes all unit and property tests | 1 day |
-| **M1** | Local single-player | LCD look, keypad, beeps; you can play solo in the browser | 1–2 days |
-| **M2** | **Hot-seat committee** (local) | 4 people on one keyboard (WASD / arrows / IJKL / numpad) vote; tally bars + Blame Screen work. **Test whether it's funny here, before any server.** | 1 day |
-| **M3** | Private rooms online | Create room → share link → friends join → host starts → full round with Blame Screen | 3–4 days |
-| **M4** | Public rooms | Lobby DO, fill-first shards, ghost voters, auto-restart, spectators | 2–3 days |
-| **M5** | Polish | Awards, captions, PNG share, emotes, reconnect, reduced motion, desktop side panels | 2–3 days |
-| **M6** | Launch | Domain, OG preview image, load test passed, posted | 1 day |
+| #      | Goal                           | Done when                                                                                                                                           | Est.     |
+| ------ | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| **M0** | Pure sim + tests               | `step()` passes all unit and property tests                                                                                                         | 1 day    |
+| **M1** | Local single-player            | LCD look, keypad, beeps; you can play solo in the browser                                                                                           | 1–2 days |
+| **M2** | **Hot-seat committee** (local) | 4 people on one keyboard (WASD / arrows / IJKL / numpad) vote; tally bars + Blame Screen work. **Test whether it's funny here, before any server.** | 1 day    |
+| **M3** | Private rooms online           | Create room → share link → friends join → host starts → full round with Blame Screen                                                                | 3–4 days |
+| **M4** | Public rooms                   | Lobby DO, fill-first shards, ghost voters, auto-restart, spectators                                                                                 | 2–3 days |
+| **M5** | Polish                         | Awards, captions, PNG share, emotes, reconnect, reduced motion, desktop side panels                                                                 | 2–3 days |
+| **M6** | Launch                         | Domain, OG preview image, load test passed, posted                                                                                                  | 1 day    |
 
 **Gate after M2:** if 4 friends on one laptop aren't laughing within 3 rounds, change the rules (vote expiry time, speed, captions) before writing any network code.
 
@@ -417,7 +417,7 @@ Each round gets a 32-bit seed. Food spawns, tie-breaks and ghost votes all come 
 
 ## 9. Later (v2 ideas, not now)
 
-- *Two Snakes* mode: two committees, one board.
+- _Two Snakes_ mode: two committees, one board.
 - Daily public "World Record Committee" with a global longest-snake leaderboard.
 - Twitch integration: chat messages `2/4/6/8` count as votes.
 - Unlockable LCD palettes (blue backlight, amber, "cracked screen").
@@ -427,16 +427,16 @@ Each round gets a 32-bit seed. Food spawns, tie-breaks and ghost votes all come 
 
 ## 10. Decisions summary
 
-| Decision | Choice | Why |
-| --- | --- | --- |
-| Vote model | Standing votes, 4s expiry | Per-tick voting at 3–8 Hz is impossible for humans; expiry stops AFK steering |
-| Authority | Server-authoritative, no prediction | Discrete tiny state; skips the hardest multiplayer problems |
-| Backend | Cloudflare Workers + 1 Durable Object per room | Room-per-object matches the game exactly; edge latency; low cost |
-| Public scaling | Fill-first shards, 24-voter cap, spectators | Keeps rooms lively and every vote visible |
-| Cold start | Labelled 👻 ghost voters | Empty rooms kill new games |
-| Chat | Preset emotes only | Zero moderation burden in v1 |
-| Rendering | Canvas 2D, no engine, integer scaling | Instant load on cheap phones; crisp pixels |
-| Sim | Pure `step()` + seeded RNG | Testable, replayable, debuggable |
-| Theme | Generic early-2000s monochrome phone; original art and sound | Nostalgia without IP risk |
-| Build order | Local hot-seat before networking | Prove it's funny before spending a week on servers |
-| Platform priority | Desktop-first; mobile functional in v1, polished in v1.1 | Launch channels and streamers are desktop; keyboard voting feels best; the phone-frame nostalgia shows on big screens; shared links still open on phones |
+| Decision          | Choice                                                       | Why                                                                                                                                                      |
+| ----------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vote model        | Standing votes, 4s expiry                                    | Per-tick voting at 3–8 Hz is impossible for humans; expiry stops AFK steering                                                                            |
+| Authority         | Server-authoritative, no prediction                          | Discrete tiny state; skips the hardest multiplayer problems                                                                                              |
+| Backend           | Cloudflare Workers + 1 Durable Object per room               | Room-per-object matches the game exactly; edge latency; low cost                                                                                         |
+| Public scaling    | Fill-first shards, 24-voter cap, spectators                  | Keeps rooms lively and every vote visible                                                                                                                |
+| Cold start        | Labelled 👻 ghost voters                                     | Empty rooms kill new games                                                                                                                               |
+| Chat              | Preset emotes only                                           | Zero moderation burden in v1                                                                                                                             |
+| Rendering         | Canvas 2D, no engine, integer scaling                        | Instant load on cheap phones; crisp pixels                                                                                                               |
+| Sim               | Pure `step()` + seeded RNG                                   | Testable, replayable, debuggable                                                                                                                         |
+| Theme             | Generic early-2000s monochrome phone; original art and sound | Nostalgia without IP risk                                                                                                                                |
+| Build order       | Local hot-seat before networking                             | Prove it's funny before spending a week on servers                                                                                                       |
+| Platform priority | Desktop-first; mobile functional in v1, polished in v1.1     | Launch channels and streamers are desktop; keyboard voting feels best; the phone-frame nostalgia shows on big screens; shared links still open on phones |
