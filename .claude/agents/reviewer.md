@@ -1,4 +1,5 @@
 ---
+
 name: reviewer
 description: Read-only code reviewer. Use after a change is ready (before commit or PR) to review a diff against CLAUDE.md non-negotiables, docs/PLAN.md and docs/adr/. Produces a prioritized findings list and never edits files.
 tools: Read, Grep, Glob, Bash

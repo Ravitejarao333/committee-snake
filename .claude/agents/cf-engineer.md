@@ -1,4 +1,5 @@
 ---
+
 name: cf-engineer
 description: Owns apps/server (Cloudflare Worker router, RoomDO, LobbyDO, wrangler.jsonc). Use for Durable Object lifecycle, WebSocket Hibernation API, alarms/tick loop, DO storage of (seed, vote log), matchmaking, rate limits, room codes and deploy config. Not for game rules (sim-engineer) or rendering (client-engineer).
 tools: Read, Grep, Glob, Edit, Write, Bash

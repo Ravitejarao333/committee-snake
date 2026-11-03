@@ -19,7 +19,7 @@
 
 ## How it works
 
-One snake per room. Every player holds a **standing vote** (↑ ↓ ← →). Each tick the server counts the live votes and the snake turns toward the winner. Eat, grow, speed up, die, and then a 6-second **Blame Screen** shows the fatal tally, names the *Assassins*, hands out awards, and offers a one-tap PNG share.
+One snake per room. Every player holds a **standing vote** (↑ ↓ ← →). Each tick the server counts the live votes and the snake turns toward the winner. Eat, grow, speed up, die, and then a 6-second **Blame Screen** shows the fatal tally, names the _Assassins_, hands out awards, and offers a one-tap PNG share.
 
 Up to **24 voters** per room, plus spectators. Public rooms for strangers, private rooms by 4-letter code. No accounts, no installs, no text chat. Desktop-first; mobile works.
 
@@ -27,13 +27,13 @@ The full design, with every rule and every decision, lives in **[docs/PLAN.md](d
 
 ## Stack
 
-| Layer | Choice | Why |
-| --- | --- | --- |
-| Simulation | Pure TypeScript `step(state, votes, rng)` | Deterministic, replayable, 100% unit-testable |
-| Server | Cloudflare Workers + **one Durable Object per room** | Room-per-object is exactly the shape of this game; edge latency; free tier |
-| Client | Vite + TypeScript + Canvas 2D | A 32×20 grid needs no engine; instant load |
-| Protocol | JSON over WebSocket, validated with zod | Readable, debuggable, hard to abuse |
-| Tooling | pnpm workspaces, Biome, Vitest, tsc strict, knip | One fast toolchain, no ESLint/Prettier split |
+| Layer      | Choice                                               | Why                                                                        |
+| ---------- | ---------------------------------------------------- | -------------------------------------------------------------------------- |
+| Simulation | Pure TypeScript `step(state, votes, rng)`            | Deterministic, replayable, 100% unit-testable                              |
+| Server     | Cloudflare Workers + **one Durable Object per room** | Room-per-object is exactly the shape of this game; edge latency; free tier |
+| Client     | Vite + TypeScript + Canvas 2D                        | A 32×20 grid needs no engine; instant load                                 |
+| Protocol   | JSON over WebSocket, validated with zod              | Readable, debuggable, hard to abuse                                        |
+| Tooling    | pnpm workspaces, Biome, Vitest, tsc strict, knip     | One fast toolchain, no ESLint/Prettier split                               |
 
 ## Repository layout
 
@@ -49,22 +49,22 @@ scripts/           setup-github.sh (one-time repo bootstrap)
 
 Every input lights the matching key on the on-screen keypad. Your vote stands until you change it, and expires after 4 seconds without a key press. Two quick presses queue up as two turns ([ADR 0007](docs/adr/0007-two-deep-vote-queue.md)).
 
-| Seat | Up | Left | Right | Down |
-| --- | --- | --- | --- | --- |
-| P1 `ARROWS`: arrow keys, or the on-screen keypad (click or tap 2/4/6/8) | ↑ | ← | → | ↓ |
-| P2 `WASD` | W | A | D | S |
-| P3 `IJKL` | I | J | L | K |
-| P4 `NUMPAD`: numpad (follows its printed arrows) | 8 | 4 | 6 | 2 |
-| P4 `NUMPAD`: number row (phone layout) | 2 | 4 | 6 | 8 |
+| Seat                                                                    | Up  | Left | Right | Down |
+| ----------------------------------------------------------------------- | --- | ---- | ----- | ---- |
+| P1 `ARROWS`: arrow keys, or the on-screen keypad (click or tap 2/4/6/8) | ↑   | ←    | →     | ↓    |
+| P2 `WASD`                                                               | W   | A    | D     | S    |
+| P3 `IJKL`                                                               | I   | J    | L     | K    |
+| P4 `NUMPAD`: numpad (follows its printed arrows)                        | 8   | 4    | 6     | 2    |
+| P4 `NUMPAD`: number row (phone layout)                                  | 2   | 4    | 6     | 8    |
 
-| Key | Does |
-| --- | --- |
-| Enter or Space | Start the round from the lobby (on touch: tap the screen) |
-| `*` or `M` | Toggle sound (off by default on touch devices) |
-| `S` or the SHARE soft key | On the Blame Screen: share it as a PNG (native share sheet, or a download) |
-| Ctrl/Cmd+C | On the Blame Screen: copy the PNG to the clipboard, where the browser supports it |
-| Any other key | On the Blame Screen, after 1.5 s: skip back to the lobby |
-| 5 | Emotes (coming soon) |
+| Key                       | Does                                                                              |
+| ------------------------- | --------------------------------------------------------------------------------- |
+| Enter or Space            | Start the round from the lobby (on touch: tap the screen)                         |
+| `*` or `M`                | Toggle sound (off by default on touch devices)                                    |
+| `S` or the SHARE soft key | On the Blame Screen: share it as a PNG (native share sheet, or a download)        |
+| Ctrl/Cmd+C                | On the Blame Screen: copy the PNG to the clipboard, where the browser supports it |
+| Any other key             | On the Blame Screen, after 1.5 s: skip back to the lobby                          |
+| 5                         | Emotes (coming soon)                                                              |
 
 The number row and the numpad disagree on purpose. On a phone keypad, 2 is the top row, so it means up. On a numpad, 8 is the top row and carries the ↑ legend.
 
@@ -101,15 +101,15 @@ The Deploy workflow is skipped until you add the `CLOUDFLARE_API_TOKEN` and `CLO
 
 ## Milestones
 
-| # | Goal | Status |
-| --- | --- | --- |
-| M0 | Pure sim + tests | ✅ |
-| M1 | Local single-player with LCD look, keypad, beeps | ✅ |
-| M2 | Hot-seat committee: 4 people, one keyboard, tally bars, Blame Screen | ✅ |
-| M3 | Private rooms online | 🔜 |
-| M4 | Public rooms, ghost voters, spectators | |
-| M5 | Polish: awards, captions, PNG share, emotes, reconnect | |
-| M6 | Launch | |
+| #   | Goal                                                                 | Status |
+| --- | -------------------------------------------------------------------- | ------ |
+| M0  | Pure sim + tests                                                     | ✅     |
+| M1  | Local single-player with LCD look, keypad, beeps                     | ✅     |
+| M2  | Hot-seat committee: 4 people, one keyboard, tally bars, Blame Screen | ✅     |
+| M3  | Private rooms online                                                 | 🔜     |
+| M4  | Public rooms, ghost voters, spectators                               |        |
+| M5  | Polish: awards, captions, PNG share, emotes, reconnect               |        |
+| M6  | Launch                                                               |        |
 
 **Gate after M2:** if four friends on one laptop aren't laughing within three rounds, change the rules before writing any network code.
 

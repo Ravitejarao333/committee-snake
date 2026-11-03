@@ -1,4 +1,5 @@
 ---
+
 name: sim-engineer
 description: Owns packages/shared (pure simulation, tally, RNG, awards, zod protocol). Use for any change to game rules, scoring, tie-breaks, vote counting, death/collision, food/bonus spawning, awards/captions or the wire protocol schemas, and for reproducing sim bugs from a (seed, votes) log. Not for server or client code.
 tools: Read, Grep, Glob, Edit, Write, Bash

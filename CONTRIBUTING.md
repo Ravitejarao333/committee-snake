@@ -26,7 +26,7 @@ Node version: `.nvmrc` (24). Editor: install the Biome extension; `.vscode/setti
    - `fix(client): keypad glow stuck after blur`
    - `docs: clarify vote expiry`
    - Scopes: `shared`, `server`, `client`, `ci`, `deps`, `docs`, `release`.
-3. Open a PR. The template asks for *what / why / how to test*. The PR **title** must also be a Conventional Commit, because we squash-merge and the title becomes the commit.
+3. Open a PR. The template asks for _what / why / how to test_. The PR **title** must also be a Conventional Commit, because we squash-merge and the title becomes the commit.
 4. CI must be green: Biome, tsc, Vitest (Node 22 and 24, coverage thresholds), build, knip, CodeQL.
 5. Squash-merge. `release-please` turns merged commits into a release PR and CHANGELOG automatically.
 
