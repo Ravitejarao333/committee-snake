@@ -4,7 +4,7 @@
   "include-component-in-tag": false,
   "pull-request-title-pattern": "chore(release): release${component} ${version}",
   "bump-minor-pre-major": true,
-  "bump-patch-for-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": false,
   "changelog-sections": [
     { "type": "feat", "section": "Features" },
     { "type": "fix", "section": "Bug Fixes" },
