@@ -3,7 +3,7 @@
  * lobby -> countdown -> playing -> dying (600 ms) -> blame (6 s) -> lobby.
  * A key skips the Blame Screen after its first 1.5 s. Times are caller ms.
  */
-export type PhaseName = "lobby" | "countdown" | "playing" | "dying" | "blame";
+type PhaseName = "lobby" | "countdown" | "playing" | "dying" | "blame";
 
 export interface Phase {
   readonly name: PhaseName;

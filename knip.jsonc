@@ -1,15 +1,14 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
       // CLI scripts, browser smoke tests and Claude Code hooks are run directly, never imported.
       "entry": ["scripts/*.ts", "scripts/smoke/*.mjs", ".claude/hooks/*.mjs"]
     },
     "apps/server": {
-      // `cloudflare:workers` is a workerd runtime built-in, not an npm package.
       // The client is never imported: it's listed so `pnpm -r build` builds
       // apps/client/dist (the Worker's static assets) before the server.
-      "ignoreDependencies": ["cloudflare", "@committee-snake/client"]
+      "ignoreDependencies": ["@committee-snake/client"]
     },
     "apps/client": { "entry": ["index.html"] }
   }

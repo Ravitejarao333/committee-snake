@@ -6,7 +6,7 @@ import type { PlayerId } from "@committee-snake/shared";
  */
 export type Seat = 0 | 1 | 2 | 3;
 
-export interface SeatInfo {
+interface SeatInfo {
   readonly seat: Seat;
   readonly id: PlayerId;
   /** Named after the seat's keys, so everyone knows who is who. Matches NICKNAME_RE. */
