@@ -27,7 +27,7 @@ else
   echo "▶ Creating repo $OWNER/$REPO ($VISIBILITY)"
   gh repo create "$OWNER/$REPO" --"$VISIBILITY" --source=. --remote=origin --push \
     --description "Classic phone Snake, except everyone votes on where it turns. Democracy was a mistake." \
-    --homepage "https://committee-snake.pages.dev"
+    --homepage "https://cheap-thrills.ravitejarao333.workers.dev"
 fi
 
 echo "▶ Repo settings"

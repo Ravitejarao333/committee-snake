@@ -1,7 +1,8 @@
 name: Deploy
 
-# Deploys the single committee-snake Worker (API + static client as Workers
-# Static Assets, ADR 0006) on every push to main after CI passes. Needs
+# Deploys the cheap-thrills Worker (API + static client as Workers Static
+# Assets, ADR 0006) on every push to main after CI passes, then the old
+# committee-snake Worker, which only 301s to the new host. Needs
 # repository secrets:
 #   CLOUDFLARE_API_TOKEN  (Workers Scripts:Edit, Account:Read)
 #   CLOUDFLARE_ACCOUNT_ID
@@ -48,3 +49,13 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/server
           command: deploy --env production
+
+      # Links to committee-snake.<subdomain>.workers.dev already exist: that Worker now
+      # 301s every path to the same path on cheap-thrills. Runs after the site is up.
+      - name: Deploy old-host redirect
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/server
+          command: deploy -c wrangler.redirect.jsonc

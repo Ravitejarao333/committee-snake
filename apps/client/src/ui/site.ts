@@ -1,2 +1,2 @@
-/** The site's name, shown on the hub and in every share card's footer. */
-export const SITE_NAME = "committee-snake";
+/** Every share card's footer label: the site's short name and the host it was made on. */
+export const shareLabel = (host: string): string => `cheapthrills · ${host}`;

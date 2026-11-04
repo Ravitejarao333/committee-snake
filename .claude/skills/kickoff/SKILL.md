@@ -17,7 +17,7 @@ Run this block from the repo root in **one** Bash call:
 git fetch -q --prune
 echo "BRANCH $(git branch --show-current) ($(test -z "$(git status --porcelain)" && echo clean || echo dirty)), origin/main $(git log -1 --format='%h %s' origin/main)"
 echo "MILESTONES $(grep -E '^\| M[0-9]' README.md | awk -F'|' '{gsub(/ /,"",$2); s=$4; gsub(/^ +| +$/,"",s); printf "%s %s  ", $2, (s==""?"-":s)}')"
-echo "LIVE $(curl -s -m 10 -w ' HTTP %{http_code}' https://committee-snake.ravitejarao333.workers.dev/health || echo 'unreachable')"
+echo "LIVE $(curl -s -m 10 -w ' HTTP %{http_code}' https://cheap-thrills.ravitejarao333.workers.dev/health || echo 'unreachable')"
 echo "PRS (open, max 8)"
 gh pr list --state open --limit 8 --json number,title,statusCheckRollup -q '.[] | "  #\(.number) \(.title) [\([.statusCheckRollup[] | select((.conclusion // .state) as $c | ["SUCCESS","SKIPPED","NEUTRAL"] | index($c) | not) | .name] | if length == 0 then "green" else "not green: " + join(", ") end)]"'
 echo "ISSUES (open, max 5)"

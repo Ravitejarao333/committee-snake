@@ -5,5 +5,5 @@
     "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "og/*.ts"]
 }

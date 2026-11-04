@@ -1,5 +1,6 @@
 import { type ShareResult, sharePng } from "../fx/share";
 import { canvasPng, drawShareFooter, SHARE_H, SHARE_W, shareLayout } from "../ui/share-footer";
+import { shareLabel } from "../ui/site";
 import type { Reveal } from "./reveals";
 
 const RED = "#a3161a";
@@ -23,7 +24,7 @@ function mark(ctx: CanvasRenderingContext2D, x: number, y: number, u: number): v
 
 /** The reveal behind pane #`pane` as a 1200x630 card with the site footer. */
 export function renderGlassShare(reveal: Reveal, pane: number): Promise<Blob> {
-  const label = `break glass · ${location.host} · pane #${pane}`;
+  const label = `${shareLabel(location.host)} · pane #${pane}`;
   const s = shareLayout(SHARE_W, SHARE_H, label.length);
   const canvas = document.createElement("canvas");
   canvas.width = SHARE_W;

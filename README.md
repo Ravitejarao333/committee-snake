@@ -1,9 +1,8 @@
-<h1 align="center">🐍 Committee Snake</h1>
+<h1 align="center">Cheap Thrills</h1>
 
 <p align="center">
-  Classic phone Snake, except <strong>everyone in the room votes</strong> on where it turns.<br/>
-  When it dies, the <strong>Blame Screen</strong> names exactly who killed it.<br/>
-  <em>Democracy was a mistake.</em>
+  Small games. Big feelings. No sign-up.<br/>
+  <a href="https://cheap-thrills.ravitejarao333.workers.dev">cheap-thrills.ravitejarao333.workers.dev</a>
 </p>
 
 <p align="center">
@@ -19,7 +18,7 @@
 
 ## Games
 
-The site is a small collection of browser games. `/` is a hub with one card per game, each with a live preview; a tap goes straight in.
+Cheap Thrills is a small collection of browser games. `/` is a hub with one card per game, each with a live preview; a tap goes straight in. The GitHub repo is still called `committee-snake`, after the first game.
 
 | Game                | Path     | What it is                                                                     |
 | ------------------- | -------- | ------------------------------------------------------------------------------ |
@@ -27,6 +26,12 @@ The site is a small collection of browser games. `/` is a hub with one card per 
 | **Break Glass**     | `/glass` | In case of boredom, break glass. Solo, local-only.                             |
 
 Each game is its own HTML page with its own JavaScript budget ([ADR 0008](docs/adr/0008-multi-game-client.md)).
+
+### Site name, icons and link previews
+
+- Page titles are `Cheap Thrills`, `Committee Snake · Cheap Thrills` and `Break Glass · Cheap Thrills`. Every PNG share card's footer reads `cheapthrills · <host>`, where the host is the one the card was made on.
+- The mark is a cracked coin. `apps/client/scripts/icons.ts` holds its geometry, and the build writes `favicon.svg`, `favicon.ico` (16, 32 and 48 px) and `apple-touch-icon.png` from it, with no image dependencies. These are not JavaScript, so they don't count toward the page budgets.
+- Each page has Open Graph and Twitter meta with `og:site_name` "Cheap Thrills" and its own 1200×630 card from `apps/client/public/og/`. The cards are committed. `node scripts/og/render.ts` redraws them with headless Chrome.
 
 ### Break Glass
 
@@ -40,6 +45,8 @@ A red emergency box with a pane of glass. A press cracks it under your finger in
 - If frames run long during a shatter, later shatters use fewer shards and fewer tinkle voices.
 
 ## How it works
+
+The rest of this README is about **Committee Snake**: classic phone Snake, except everyone in the room votes on where it turns. When it dies, the **Blame Screen** names exactly who killed it. _Democracy was a mistake._
 
 One snake per room. Every player holds a **standing vote** (↑ ↓ ← →). Each tick the server counts the live votes and the snake turns toward the winner. Eat, grow, speed up, die, and then a 6-second **Blame Screen** shows the fatal tally, names the _Assassins_, hands out awards, and offers a one-tap PNG share.
 
@@ -68,7 +75,7 @@ apps/client/       browser client: one Vite app, one HTML page per game
   src/glass/       Break Glass at /glass
   src/fx/, src/ui/ shared audio engine, PNG share, share-card footer
 docs/              PLAN.md (design doc) and ADRs
-scripts/           setup-github.sh (one-time repo bootstrap), replay, browser and route smoke tests
+scripts/           setup-github.sh (one-time repo bootstrap), replay, OG cards, browser and route smoke tests
 ```
 
 ## Controls
@@ -120,6 +127,7 @@ pnpm --filter @committee-snake/server cf-typegen   # regenerate Worker binding t
 node scripts/smoke/client.mjs    # headless-Chrome smoke of the hub and Snake (needs the client dev server)
 node scripts/smoke/glass.mjs     # headless-Chrome smoke of Break Glass, with a frame budget (needs the client dev server)
 node scripts/smoke/routes.mjs    # page routing behind the Worker (needs `pnpm --filter @committee-snake/server dev`)
+node scripts/og/render.ts        # redraw the OG cards in apps/client/public/og/ (headless Chrome)
 ```
 
 ### Size budgets
@@ -128,13 +136,15 @@ node scripts/smoke/routes.mjs    # page routing behind the Worker (needs `pnpm -
 
 | Page     | Budget (raw) | Now (raw / gzip)    |
 | -------- | ------------ | ------------------- |
-| `/` hub  | 15 KB        | 14,347 B / 6,994 B  |
-| `/snake` | 40 KB        | 39,077 B / 16,709 B |
-| `/glass` | 60 KB        | 28,821 B / 13,346 B |
+| `/` hub  | 15 KB        | 14,347 B / 6,996 B  |
+| `/snake` | 40 KB        | 39,070 B / 16,714 B |
+| `/glass` | 60 KB        | 28,833 B / 13,361 B |
 
 ## Deploying
 
-Production is one Worker, `committee-snake` ([ADR 0006](docs/adr/0006-single-worker-assets-and-api.md)). It serves the built client from `apps/client/dist` as Workers Static Assets and runs the router only for `/room`, `/room/*`, `/public/*` and `/health`. Any other path is a static file. The client builds to three pages, `index.html` (the hub), `snake.html` and `glass.html`. Static Assets serves `snake.html` at `/snake` and redirects `/snake.html` and `/snake/` there; `glass.html` works the same way. A path with no matching file gets `index.html`, so unknown URLs land on the hub. The live URL is `https://committee-snake.<your-subdomain>.workers.dev`. Deploy builds the client, then runs `wrangler deploy --env production` from `apps/server`; there is no separate Pages project.
+Production is one Worker, `cheap-thrills` ([ADR 0006](docs/adr/0006-single-worker-assets-and-api.md)). It serves the built client from `apps/client/dist` as Workers Static Assets and runs the router only for `/room`, `/room/*`, `/public/*` and `/health`. Any other path is a static file. The client builds to three pages, `index.html` (the hub), `snake.html` and `glass.html`. Static Assets serves `snake.html` at `/snake` and redirects `/snake.html` and `/snake/` there; `glass.html` works the same way. A path with no matching file gets `index.html`, so unknown URLs land on the hub. The live URL is `https://cheap-thrills.<your-subdomain>.workers.dev`. Deploy builds the client, then runs `wrangler deploy --env production` from `apps/server`; there is no separate Pages project.
+
+The site used to be the `committee-snake` Worker, and links to `https://committee-snake.<your-subdomain>.workers.dev` exist. That Worker is now `apps/server/src/redirect.ts` (config `wrangler.redirect.jsonc`): it answers every request with a 301 to the same path and query on the `cheap-thrills` host. Deploy runs it right after the site. Its `v2` migration deleted the old Worker's Durable Object classes, which had never held state. After a deploy, `node scripts/smoke/routes.mjs https://cheap-thrills.<sub>.workers.dev https://committee-snake.<sub>.workers.dev` checks both hosts.
 
 The Deploy workflow is skipped until you add the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets and set the repository variable `DEPLOY_ENABLED=true` (`gh variable set DEPLOY_ENABLED --body true`).
 
