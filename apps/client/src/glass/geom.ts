@@ -12,7 +12,7 @@ export interface Bounds {
 }
 
 /** `xs[i]`, for an index the caller knows is in range; throws rather than returning undefined. */
-export function at<T>(xs: readonly T[], i: number): T {
+export function at<T>(xs: ArrayLike<T>, i: number): T {
   const v = xs[i];
   if (v === undefined) throw new RangeError(`index ${i} of ${xs.length}`);
   return v;
