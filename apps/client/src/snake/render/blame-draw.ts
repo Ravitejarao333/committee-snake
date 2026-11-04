@@ -2,7 +2,7 @@ import { avatarBits } from "@committee-snake/shared";
 import { avatarBitmap } from "./avatar";
 import type { Rect } from "./bars";
 import { type BlameFit, type Line, lineCols, softkeyRect } from "./blame";
-import { drawBitmap, FONT, LCD_BG, LCD_PX } from "./lcd";
+import { drawBitmap, FONT, LCD_BG, LCD_PX } from "./dots";
 import { GLYPH, rotate } from "./sprites";
 
 /** The arrow glyph points up; these turns aim it at each direction. */

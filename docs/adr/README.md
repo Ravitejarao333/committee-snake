@@ -11,3 +11,4 @@ Short, numbered, immutable records of decisions that are expensive to reverse. S
 | [0005](0005-one-rng-stream-per-round.md)      | One seeded RNG stream per round, consumed in a fixed order; server logs `(seed, votes-per-tick)` | Proposed |
 | [0006](0006-single-worker-assets-and-api.md)  | Single Worker serves static assets and API (no Pages)                                            | Accepted |
 | [0007](0007-two-deep-vote-queue.md)           | Two-deep vote queue per player (head + one pending)                                              | Accepted |
+| [0008](0008-multi-game-client.md)             | Multi-game client: one Vite app, per-page budgets, shared `fx/` toolkit                          | Accepted |

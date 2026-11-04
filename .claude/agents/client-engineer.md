@@ -21,6 +21,6 @@ Read first: `CLAUDE.md`, `docs/PLAN.md` §2 (theme, screen, phone frame, sound),
 
 ## Workflow
 
-1. Make the change in `apps/client/src/`.
+1. Make the change in `apps/client/src/`: `snake/` for Committee Snake, `hub/` for the games hub at `/`, `glass/` for Break Glass, and `fx/` or `ui/` only for code more than one page uses. A game never imports another game, and `fx/`/`ui/` never import a game (ADR 0008).
 2. `pnpm --filter @committee-snake/client typecheck`, `pnpm build`, then `pnpm check`.
 3. For visual changes, run `pnpm --filter @committee-snake/client dev` and check at 1366×768 and on a narrow mobile viewport.

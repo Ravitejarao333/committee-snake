@@ -1,7 +1,9 @@
 /**
- * Square-wave beeps (docs/PLAN.md §2.4). Nothing touches AudioContext,
- * window or localStorage at import time: `createAudio` does, on demand.
+ * Square-wave beeps (docs/PLAN.md §2.4) on the shared engine (fx/audio). Nothing touches
+ * AudioContext, window or localStorage at import time: `createAudio` does, on demand.
  */
+import { createAudioEngine } from "../fx/audio";
+
 export type SoundName = "vote" | "turn" | "eat" | "bonus" | "death" | "dun";
 
 /** One note; `hz: 0` is a rest. */
@@ -39,13 +41,6 @@ export const EDGE_MS = 2;
 
 const STORAGE_KEY = "committee-snake:muted";
 
-/** Stored preference wins; otherwise touch-only devices start muted. */
-export function defaultMuted(stored: string | null, coarseOnly: boolean): boolean {
-  if (stored === "1") return true;
-  if (stored === "0") return false;
-  return coarseOnly;
-}
-
 export interface Audio {
   /** Call from every user gesture: creates/resumes the AudioContext once allowed. */
   unlock(): void;
@@ -57,27 +52,8 @@ export interface Audio {
   readonly played: number;
 }
 
-function readStored(): string | null {
-  try {
-    return localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function writeStored(muted: boolean): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, muted ? "1" : "0");
-  } catch {
-    // Private mode or storage disabled: the toggle still works for this visit.
-  }
-}
-
 export function createAudio(): Audio {
-  const coarseOnly =
-    matchMedia("(pointer: coarse)").matches && !matchMedia("(any-pointer: fine)").matches;
-  let muted = defaultMuted(readStored(), coarseOnly);
-  let ctx: AudioContext | null = null;
+  const engine = createAudioEngine({ storageKey: STORAGE_KEY, touchStartsMuted: true });
   let played = 0;
 
   const note = (c: AudioContext, n: Note, t: number): void => {
@@ -96,24 +72,11 @@ export function createAudio(): Audio {
     osc.stop(t + dur);
   };
 
-  const unlock = (): void => {
-    if (!ctx) {
-      // Only create once sound is wanted and the browser counts this as a gesture,
-      // otherwise Chrome logs an autoplay warning (touchstart isn't an activation).
-      if (muted || navigator.userActivation?.isActive === false) return;
-      try {
-        ctx = new AudioContext();
-      } catch {
-        return;
-      }
-    }
-    if (ctx.state === "suspended") void ctx.resume().catch(() => undefined);
-  };
-
   return {
-    unlock,
+    unlock: engine.unlock,
     play(name) {
-      if (muted || !ctx || ctx.state !== "running") return;
+      const ctx = engine.live();
+      if (!ctx) return;
       let t = ctx.currentTime + 0.005;
       for (const n of SOUNDS[name]) {
         if (n.hz > 0) note(ctx, n, t);
@@ -121,17 +84,12 @@ export function createAudio(): Audio {
       }
       played++;
     },
-    toggleMute() {
-      muted = !muted;
-      writeStored(muted);
-      unlock();
-      return muted;
-    },
+    toggleMute: engine.toggleMute,
     get muted() {
-      return muted;
+      return engine.muted;
     },
     get state() {
-      return ctx ? ctx.state : null;
+      return engine.state;
     },
     get played() {
       return played;

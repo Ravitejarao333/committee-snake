@@ -6,9 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/check-size.mjs",
+    "build": "vite build && node scripts/check-size.ts",
     "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json && tsc -p scripts"
   },
   "dependencies": {
     "@committee-snake/shared": "workspace:*"

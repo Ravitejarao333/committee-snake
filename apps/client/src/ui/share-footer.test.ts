@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SHARE_H, SHARE_W, shareLayout } from "./share";
+import { SHARE_H, SHARE_W, shareLayout } from "./share-footer";
 
 describe("shareLayout", () => {
   const chars = "committee-snake · localhost:5173".length;

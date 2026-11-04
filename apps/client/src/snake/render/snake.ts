@@ -1,6 +1,6 @@
 import type { Cell, Dir, GameState } from "@committee-snake/shared";
+import { COLS, cellOrigin, drawBitmap } from "./dots";
 import type { LcdLayout } from "./layout";
-import { COLS, cellOrigin, drawBitmap } from "./lcd";
 import {
   type Bitmap,
   CRITTER,

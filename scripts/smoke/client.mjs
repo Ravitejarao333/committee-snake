@@ -2,9 +2,10 @@
 // Client browser smoke test: drives headless Chrome over the DevTools Protocol (no deps).
 // 1. pnpm --filter @committee-snake/client dev        (serves http://localhost:5173)
 // 2. node scripts/smoke/client.mjs [url] [outDir]      (CHROME_PATH overrides the browser)
-// Solo rounds at 1366×768, 390×844@3× and reduced motion, then a 3-seat hot-seat round at both
+// The hub at / (cards, live previews, links into each game) at 1366×768, 390×844@3× and reduced
+// motion. Then Snake at /snake: solo rounds at the same three, and a 3-seat hot-seat round at both
 // sizes: bars, Blame Screen, share PNG and copy. Screenshots and the PNG go to outDir.
-// Exits 1 on any failed check or console error/warning. Needs the dev-only `window.__cs` hook.
+// Exits 1 on any failed check or console error/warning. Needs the dev-only `__hub`/`__cs` hooks.
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
@@ -12,6 +13,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const url = process.argv[2] ?? "http://localhost:5173";
+const hubUrl = new URL("/", url).href;
+const snakeUrl = new URL("/snake", url).href;
 // Default to a fresh private dir rather than a predictable shared /tmp path.
 const outDir = process.argv[3] ?? mkdtempSync(join(tmpdir(), "cs-smoke-"));
 const chromePath =
@@ -157,7 +160,8 @@ async function press(cdp, key, modifiers = 0) {
   await cdp.send("Input.dispatchKeyEvent", { type: "keyDown", ...base });
   await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", ...base });
 }
-async function touchAt(cdp, selector) {
+/** Viewport centre of the first element matching `selector`. */
+async function centreOf(cdp, selector) {
   // Pass the selector as a CDP argument rather than splicing it into evaluated code.
   const { result: doc } = await cdp.send("Runtime.evaluate", { expression: "document" });
   const { result, exceptionDetails } = await cdp.send("Runtime.callFunctionOn", {
@@ -170,8 +174,31 @@ async function touchAt(cdp, selector) {
   if (exceptionDetails) throw new Error(exceptionDetails.text);
   const r = result.value;
   if (!r) throw new Error(`nothing at ${selector}`);
+  return r;
+}
+async function touchAt(cdp, selector) {
+  const r = await centreOf(cdp, selector);
   await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [r] });
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+}
+async function mouseAt(cdp, selector, click) {
+  const { x, y } = await centreOf(cdp, selector);
+  await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+  if (!click) return;
+  const btn = { x, y, button: "left", clickCount: 1 };
+  await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", ...btn });
+  await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...btn });
+}
+/** Poll `expression` until `pred` holds on its value. */
+async function until(cdp, label, expression, pred, timeoutMs = 10_000) {
+  const end = Date.now() + timeoutMs;
+  let v = null;
+  while (Date.now() < end) {
+    v = await evaluate(cdp, expression).catch(() => null);
+    if (v && pred(v)) return v;
+    await sleep(50);
+  }
+  throw new Error(`timed out waiting for ${label}: ${JSON.stringify(v)}`);
 }
 const tap = (cdp, dataKey) => touchAt(cdp, `[data-key="${dataKey}"]`);
 async function shot(cdp, name) {
@@ -198,7 +225,8 @@ const SCENARIOS = [
   { name: "hotseat-390x844", ...MOBILE, reduced: false, mode: "hotseat" },
 ];
 
-async function load(cdp, sc) {
+/** Viewport, touch, motion preference and fresh storage for a scenario. */
+async function emulate(cdp, sc) {
   await cdp.send("Emulation.setDeviceMetricsOverride", {
     width: sc.width,
     height: sc.height,
@@ -217,7 +245,11 @@ async function load(cdp, sc) {
     origin: new URL(url).origin,
     storageTypes: "local_storage",
   });
-  await cdp.send("Page.navigate", { url });
+}
+
+async function load(cdp, sc) {
+  await emulate(cdp, sc);
+  await cdp.send("Page.navigate", { url: snakeUrl });
   await waitFor(cdp, "lobby", (s) => s.phase === "lobby");
   await evaluate(cdp, "document.fonts.ready.then(() => true)");
   await sleep(400);
@@ -407,6 +439,99 @@ async function hotseat(cdp, sc) {
   check(back.seats?.length === 3, `seats kept in the lobby (${back.seats?.length})`);
 }
 
+// --- hub ---------------------------------------------------------------------
+const HUB_SCENARIOS = [
+  { name: "hub-1366x768", ...DESKTOP, reduced: false },
+  { name: "hub-390x844", ...MOBILE, reduced: false },
+  { name: "hub-reduced-motion", ...DESKTOP, reduced: true },
+];
+const HOOKS = {
+  snake: "Everyone votes. The snake dies. Someone gets blamed.",
+  glass: "In case of boredom, break glass.",
+};
+const hubState = `(() => { const h = window.__hub; return { path: location.pathname,
+  page: document.querySelector('meta[name="page"]')?.content ?? null, cs: !!window.__cs,
+  snakeTicks: h?.snakeTicks ?? null, glassGrowth: h?.glassGrowth ?? null }; })()`;
+const previewPixels = (cdp, game) =>
+  evaluate(cdp, `document.querySelector('.card[data-game="${game}"] canvas').toDataURL()`);
+
+async function openHub(cdp) {
+  await cdp.send("Page.navigate", { url: hubUrl });
+  return until(cdp, "hub", hubState, (s) => s.page === "hub" && s.snakeTicks !== null);
+}
+
+async function hub(cdp, sc) {
+  await emulate(cdp, sc);
+  await openHub(cdp);
+  const page = await evaluate(
+    cdp,
+    `(() => ({ cards: [...document.querySelectorAll(".card")].map((a) => ({
+      game: a.dataset.game, href: a.getAttribute("href"), title: a.querySelector("h2")?.textContent,
+      hook: a.querySelector(".hook")?.textContent, playing: a.querySelector("[data-playing]")?.textContent })),
+      footer: [...document.querySelectorAll("footer a")].map((a) => a.href),
+      scrollW: document.documentElement.scrollWidth, innerW: innerWidth }))()`,
+  );
+  const games = page.cards.map((c) => `${c.game}:${c.href}`).join(" ");
+  check(games === "snake:/snake glass:/glass", `two cards link into the games (${games})`);
+  check(
+    page.cards.every((c) => c.title && c.hook === HOOKS[c.game] && c.playing === "—"),
+    `titles, hooks and "— playing" slots: ${JSON.stringify(page.cards)}`,
+  );
+  check(
+    page.footer.length === 1 && new URL(page.footer[0]).hostname === "github.com",
+    `footer is one GitHub link (${page.footer})`,
+  );
+  check(page.scrollW <= page.innerW, `no sideways scroll (${page.scrollW} ≤ ${page.innerW})`);
+  await sleep(300);
+  await shot(cdp, `${sc.name}-1-hub`);
+
+  // The Snake preview plays real ticks unless motion is reduced.
+  const a = await evaluate(cdp, hubState);
+  const pa = await previewPixels(cdp, "snake");
+  await sleep(800);
+  const b = await evaluate(cdp, hubState);
+  const pb = await previewPixels(cdp, "snake");
+  if (sc.reduced)
+    check(b.snakeTicks === a.snakeTicks && pa === pb, `reduced motion: snake preview is still`);
+  else
+    check(
+      b.snakeTicks > a.snakeTicks && pa !== pb,
+      `snake preview animates (${a.snakeTicks} → ${b.snakeTicks} ticks)`,
+    );
+
+  // Hover (mouse) or press (touch) grows the Glass preview's crack.
+  const glassSel = '.card[data-game="glass"] .preview';
+  const ga = await evaluate(cdp, hubState);
+  const qa = await previewPixels(cdp, "glass");
+  let held = null;
+  if (sc.mobile) {
+    held = await centreOf(cdp, glassSel);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [held] });
+  } else await mouseAt(cdp, glassSel, false);
+  await sleep(500);
+  const gb = await evaluate(cdp, hubState);
+  const qb = await previewPixels(cdp, "glass");
+  if (sc.reduced) check(gb.glassGrowth === 1, `reduced motion: crack drawn in full`);
+  else
+    check(
+      gb.glassGrowth > ga.glassGrowth && qa !== qb,
+      `glass crack grows on ${sc.mobile ? "touch" : "hover"} (${ga.glassGrowth.toFixed(2)} → ${gb.glassGrowth.toFixed(2)})`,
+    );
+  await shot(cdp, `${sc.name}-2-glass-${sc.mobile ? "press" : "hover"}`);
+
+  // Releasing the touch is a tap on the card: straight into /glass.
+  if (held) await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  else await mouseAt(cdp, glassSel, true);
+  const g = await until(cdp, "/glass", hubState, (s) => s.page === "glass");
+  check(g.path === "/glass", `glass card lands on ${g.path}`);
+
+  await openHub(cdp);
+  if (sc.mobile) await touchAt(cdp, '.card[data-game="snake"] .preview');
+  else await mouseAt(cdp, '.card[data-game="snake"] .preview', true);
+  const s = await until(cdp, "/snake", hubState, (x) => x.page === "snake" && x.cs);
+  check(s.path === "/snake", `snake card lands on ${s.path} and the game boots`);
+}
+
 async function play(cdp, sc, problems) {
   say(`\n${sc.name}`);
   const before = problems.length;
@@ -436,6 +561,12 @@ try {
       problems.push(`log.${p.entry.level}: ${p.entry.text} ${p.entry.url ?? ""}`);
   });
   for (const domain of ["Page", "Runtime", "Log"]) await cdp.send(`${domain}.enable`);
+  for (const sc of HUB_SCENARIOS) {
+    say(`\n${sc.name}`);
+    const before = problems.length;
+    await hub(cdp, sc);
+    check(problems.length === before, `no console errors/warnings (${problems.length - before})`);
+  }
   for (const sc of SCENARIOS) await play(cdp, sc, problems);
   cdp.close();
   browser.close();

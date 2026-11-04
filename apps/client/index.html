@@ -3,26 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Committee Snake</title>
-    <meta name="description" content="Classic phone Snake, except everyone in the room votes on where it turns. Democracy was a mistake." />
-    <meta name="theme-color" content="#1b1d1a" />
-    <!-- TODO(M6): real og.png and final copy. -->
+    <meta name="page" content="hub" />
+    <title>committee-snake: small satisfying games</title>
+    <meta name="description" content="Small, satisfying browser games. Vote a snake to its death, or break some glass." />
+    <meta name="theme-color" content="#111111" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Committee Snake" />
-    <meta property="og:description" content="Classic phone Snake, except everyone in the room votes on where it turns." />
+    <meta property="og:title" content="committee-snake" />
+    <meta property="og:description" content="Small, satisfying browser games. Vote a snake to its death, or break some glass." />
     <meta property="og:image" content="/og.png" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Committee Snake" />
-    <meta name="twitter:description" content="Classic phone Snake, except everyone in the room votes on where it turns." />
-    <meta name="twitter:image" content="/og.png" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%23c7f0d8'/%3E%3Cpath fill='%2343523d' d='M1 5h4v1H1zM4 2h1v3H4zM4 2h3v1H4zM2 2h1v1H2z'/%3E%3C/svg%3E" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
-    <link rel="stylesheet" href="/src/style.css" />
+    <link rel="stylesheet" href="/src/hub/style.css" />
   </head>
   <body>
-    <main id="app"></main>
-    <script type="module" src="/src/main.ts"></script>
+    <main class="hub">
+      <h1>committee-snake</h1>
+      <ul class="games">
+        <li>
+          <a class="card" href="/snake" data-game="snake">
+            <div class="preview preview-snake"><canvas aria-hidden="true"></canvas></div>
+            <h2>Committee Snake</h2>
+            <p class="hook">Everyone votes. The snake dies. Someone gets blamed.</p>
+            <p class="playing"><span data-playing="snake">—</span> playing</p>
+          </a>
+        </li>
+        <li>
+          <a class="card" href="/glass" data-game="glass">
+            <div class="preview preview-glass"><canvas aria-hidden="true"></canvas></div>
+            <h2>Break Glass</h2>
+            <p class="hook">In case of boredom, break glass.</p>
+            <p class="playing"><span data-playing="glass">—</span> playing</p>
+          </a>
+        </li>
+      </ul>
+      <footer><a href="https://github.com/Ravitejarao333/committee-snake">GitHub</a></footer>
+    </main>
+    <script type="module" src="/src/hub/main.ts"></script>
   </body>
 </html>
