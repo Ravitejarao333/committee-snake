@@ -3,12 +3,14 @@
   "workspaces": {
     ".": {
       // CLI scripts, browser smoke tests and Claude Code hooks are run directly, never imported.
-      "entry": ["scripts/*.ts", "scripts/smoke/*.mjs", ".claude/hooks/*.mjs"]
+      "entry": ["scripts/*.ts", "scripts/og/*.ts", "scripts/smoke/*.mjs", ".claude/hooks/*.mjs"]
     },
     "apps/server": {
       // The client is never imported: it's listed so `pnpm -r build` builds
       // apps/client/dist (the Worker's static assets) before the server.
-      "ignoreDependencies": ["@committee-snake/client"]
+      "ignoreDependencies": ["@committee-snake/client"],
+      // The old-host redirect Worker's entry (wrangler.redirect.jsonc).
+      "entry": ["src/redirect.ts"]
     },
     "apps/client": { "entry": ["index.html", "snake.html", "glass.html"] }
   }
