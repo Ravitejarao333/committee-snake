@@ -3,17 +3,43 @@ import { buzz } from "../fx/haptics";
 import { createParticles } from "../fx/particles";
 import type { ShareResult } from "../fx/share";
 import { gestureGate } from "../ui/gesture-gate";
-import { type Crack, type CrackLines, crackAt, crackLines, hitSeed, reachFor } from "./crack";
-import { drawShards, fit, paintPane, type ShardArt, shardArt, strokeCrack } from "./draw";
-import { createFx, type FxFrame } from "./fx";
+import { type Crack, crackAt, crackLines, hitSeed, reachFor } from "./crack";
+import { hitDamage, oneTapLeft, paneStrength } from "./damage";
+import {
+  type CrackArt,
+  crackArt,
+  dimGlass,
+  drawRemnant,
+  drawShards,
+  fit,
+  paintCracks,
+  paintPane,
+  polyPaths,
+  type ShardArt,
+  shardArt,
+  strokeCracks,
+} from "./draw";
+import { createFx, type FxFrame, remnantAlpha } from "./fx";
 import type { Bounds, Pt } from "./geom";
+import {
+  commitHit,
+  components,
+  crackDist,
+  createNetwork,
+  type Seg,
+  type Traced,
+  trace,
+  web,
+} from "./network";
+import { createSlivers, remnant } from "./payoff";
 import { createSim, type ShardSim, stepShards } from "./physics";
 import type { Reveal } from "./reveals";
 import { nextPaneSeed, paneFromHash, revealFor, revealIndex } from "./select";
 import { shatter } from "./shards";
 import { renderGlassShare, shareReveal } from "./share-render";
 import { createGlassSound } from "./sound";
-import { FLICK_SHATTER, HOLD_SHATTER_MS, MoveTrack, strength } from "./strength";
+import { MoveTrack, strength } from "./strength";
+import { FLAKES, GROW, REMNANT_MS } from "./tuning";
 
 type Phase = "intact" | "cracked" | "shattering" | "revealed" | "sliding";
 
@@ -24,6 +50,10 @@ const SLIDE_MS = 350;
 const NEXT_PANE_MS = 2000;
 const FRAME_BUDGET_MS = 3;
 const KEY_STRENGTH = 0.55;
+/** While a press is held, check its growing strength this often (in a timer task, not a frame). */
+const GROW_TICK_MS = 40;
+/** The glass round the reveal darkens over this long. */
+const DIM_MS = 250;
 
 const $ = <T extends HTMLElement>(id: string): T => {
   const el = document.getElementById(id);
@@ -50,20 +80,23 @@ const rng = mulberry32((Date.now() ^ (Math.random() * 2 ** 32)) >>> 0);
 const sound = createGlassSound(mulberry32(rng.int(2 ** 31)));
 const fx = createFx(mulberry32(rng.int(2 ** 31)));
 const particles = createParticles();
+const slivers = createSlivers();
 const approach = new MoveTrack();
 const drag = new MoveTrack();
 
+/** A landed hit: its crack and how hard it was. */
 interface Hit {
   crack: Crack;
-  lines: CrackLines;
+  s: number;
 }
 interface Live extends Hit {
   id: number;
   downAt: number;
-  area: number;
-  pressure: number;
   approach: number;
-  s: number;
+  /** How far the press is from the nearest older crack, px (for the weak-spot bonus). */
+  near: number;
+  traced: Traced;
+  art: CrackArt;
 }
 
 let phase: Phase = "intact";
@@ -72,7 +105,11 @@ let dpr = 1;
 let paneSeed = paneFromHash(location.hash) ?? nextPaneSeed(rng, []);
 const recent: number[] = [];
 let hitIndex = 0;
-let cracks: Hit[] = [];
+let hits: Hit[] = [];
+let net = createNetwork(b);
+let webSegs: Seg[] = [];
+let dealt = 0;
+let paneMax = paneStrength(paneSeed);
 let live: Live | null = null;
 let sim: ShardSim | null = null;
 let art: ShardArt | null = null;
@@ -87,7 +124,11 @@ let shatterFrames: number[] = [];
 const frameMs: number[] = [];
 const timeScaleLog: number[] = [];
 let lastShare: ShareResult | null = null;
-let holdTimer = 0;
+let growTimer = 0;
+let shatterAt = Number.NEGATIVE_INFINITY;
+let remnantPaths: Path2D[] = [];
+/** Where the reveal sits, for the light through the hole. */
+let litAt: Pt = { x: 0, y: 0 };
 /** How long the last shatter took to set up (outside any frame), ms. */
 let breakMs = 0;
 
@@ -113,11 +154,12 @@ const strengthNow = (l: Live, now: number): number =>
   strength({
     approach: l.approach,
     heldMs: Math.max(0, now - l.downAt),
-    area: l.area,
-    pressure: l.pressure,
     flick: drag.speed(now),
     diag: diag(),
   });
+const ratio = (): number => dealt / paneMax;
+/** Older cracks reach further as the pane takes damage. */
+const reachOf = (h: Hit): number => reachFor(h.crack, h.s) * (1 + GROW * ratio());
 
 function playHit(s: number): void {
   if (!sound.engine.live()) {
@@ -134,9 +176,53 @@ function newCrack(p: Pt, s: number): Crack {
   return crack;
 }
 
-function commit(h: Hit): void {
-  cracks.push(h);
-  if (crackCtx) strokeCrack(crackCtx, h.lines, flat);
+/** Rebuild the network from every landed hit, its hairline web, and the cracks layer. */
+function rebuild(): void {
+  net = createNetwork(b);
+  for (const h of hits)
+    commitHit(net, trace(net, h.crack.hit, crackLines(h.crack, reachOf(h), b), h.s, h.crack.seed));
+  webSegs = web(net, ratio(), paneSeed);
+  if (crackCtx) {
+    crackCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    paintCracks(crackCtx, paneLayer, crackArt([...net.segs, ...webSegs]), b.w, b.h, flat);
+  }
+}
+
+/** A press's crack at strength s, joined onto the network (not added to it yet). */
+function retrace(crack: Crack, s: number): { traced: Traced; art: CrackArt } {
+  const traced = trace(net, crack.hit, crackLines(crack, reachOf({ crack, s }), b), s, crack.seed);
+  return { traced, art: crackArt(traced.segs) };
+}
+
+const damageOf = (crack: Crack, s: number, near: number): number =>
+  hitDamage(s, crack.hit, b, near);
+
+/** Tiny flakes off the impact point. */
+function flakes(p: Pt, s: number): void {
+  particles.emit(
+    {
+      x: p.x,
+      y: p.y,
+      count: FLAKES,
+      speed: 70 + 140 * s,
+      life: 900,
+      gravity: 900,
+      size: 1.6,
+      colors: ["#eef6f9", "#cfdfe6", "#ffffff"],
+    },
+    rng.next,
+  );
+}
+
+/** A hit that didn't break the pane: count its damage, grow the network, creak, maybe wobble. */
+function land(crack: Crack, s: number, near: number, now: number): void {
+  dealt += damageOf(crack, s, near);
+  hits.push({ crack, s });
+  rebuild();
+  sound.creak(ratio());
+  if (oneTapLeft(dealt, paneMax)) fx.wobble(now);
+  phase = "cracked";
+  kick();
 }
 
 function stage(): void {
@@ -149,26 +235,34 @@ function stage(): void {
 function placeReveal(r: Reveal, at: Pt): void {
   const hw = twin.offsetWidth / 2 + 8;
   const hh = twin.offsetHeight / 2 + 8;
+  litAt = {
+    x: Math.min(Math.max(at.x, hw), b.w - hw),
+    y: Math.min(Math.max(at.y, hh), b.h - hh),
+  };
   revealEl.textContent = r.text;
   revealEl.dataset.kind = r.kind;
-  revealEl.style.left = `${Math.min(Math.max(at.x, hw), b.w - hw)}px`;
-  revealEl.style.top = `${Math.min(Math.max(at.y, hh), b.h - hh)}px`;
+  revealEl.style.left = `${litAt.x}px`;
+  revealEl.style.top = `${litAt.y}px`;
+  revealEl.classList.add("lit");
 }
 
 function breakPane(crack: Crack, s: number, now: number): void {
-  clearTimeout(holdTimer);
+  clearInterval(growTimer);
   const shards = shatter(crack, b, cap, s);
   sim = createSim(shards);
-  art = shardArt(
-    shards,
-    cracks.map((c) => c.lines),
-  );
-  cracks = [];
+  art = shardArt(shards, net.segs);
+  hits = [];
+  dealt = 0;
+  net = createNetwork(b);
+  webSegs = [];
   live = null;
   crackCtx?.clearRect(0, 0, b.w, b.h);
   phase = "shattering";
   shatterFrames = [];
   shatterS = s;
+  shatterAt = now;
+  remnantPaths = polyPaths(remnant(b, paneSeed));
+  slivers.emit(crack.hit.x, crack.hit.y, s, rng.next);
   fx.shatter(crack.hit.x, crack.hit.y, s, now);
   playHit(s);
   buzz([12, 30, 20]);
@@ -233,6 +327,8 @@ function nextPane(): void {
   if (phase !== "revealed") return;
   recent.push(revealIndex(paneSeed));
   paneSeed = nextPaneSeed(rng, recent);
+  paneMax = paneStrength(paneSeed);
+  revealEl.classList.remove("lit");
   history.replaceState(null, "", `#${paneSeed}`);
   stage();
   hitIndex = 0;
@@ -259,85 +355,65 @@ function down(e: PointerEvent): void {
   }
   if (phase !== "intact" && phase !== "cracked") return;
   pane.setPointerCapture(e.pointerId);
-  const area = e.pointerType === "mouse" ? 0 : e.width * e.height;
   const sp = e.pointerType === "mouse" ? approach.speed(e.timeStamp) : 0;
-  const s = strength({
-    approach: sp,
-    heldMs: 0,
-    area,
-    pressure: e.pressure,
-    flick: 0,
-    diag: diag(),
-  });
-  const near = 0.25 * Math.min(b.w, b.h);
-  if (cracks.some((c) => Math.hypot(c.crack.hit.x - p.x, c.crack.hit.y - p.y) < near)) {
-    breakPane(newCrack(p, Math.max(s, 0.5)), Math.max(s, 0.5), now);
-    return;
-  }
+  const s = strength({ approach: sp, heldMs: 0, flick: 0, diag: diag() });
   const crack = newCrack(p, s);
-  if (s >= 1) {
+  const near = crackDist(net, p);
+  if (dealt + damageOf(crack, s, near) >= paneMax) {
     breakPane(crack, s, now);
     return;
   }
   drag.clear();
   drag.push(now, p.x, p.y);
-  const lines = crackLines(crack, reachFor(crack, s), b);
-  live = {
-    crack,
-    lines,
-    id: e.pointerId,
-    downAt: now,
-    area,
-    pressure: e.pressure,
-    approach: sp,
-    s,
-  };
+  live = { crack, s, id: e.pointerId, downAt: now, approach: sp, near, ...retrace(crack, s) };
   const id = e.pointerId;
-  holdTimer = window.setTimeout(() => hold(id), HOLD_SHATTER_MS);
+  growTimer = window.setInterval(() => grow(id), GROW_TICK_MS);
   phase = "cracked";
   playHit(s);
+  flakes(p, s);
   // Same task as the press: the crack is on screen at the next composite, not a frame later.
   render(now, fx.frame(now));
   kick();
 }
 
-/** A press held this long shatters by itself. */
-function hold(id: number): void {
+/** Whether the live press, now at strength s, breaks the pane (and if so, break it). */
+function breaks(l: Live, s: number, now: number): boolean {
+  if (dealt + damageOf(l.crack, s, l.near) < paneMax) return false;
+  breakPane(l.crack, s, now);
+  return true;
+}
+
+/** A held press grows its crack, and breaks the pane once it's hard enough. */
+function grow(id: number): void {
   if (!live || live.id !== id) return;
   const now = performance.now();
-  breakPane(live.crack, Math.max(strengthNow(live, now), 0.9), now);
+  const s = strengthNow(live, now);
+  if (breaks(live, s, now) || s < live.s + 0.04) return;
+  live.s = s;
+  Object.assign(live, retrace(live.crack, s));
+  kick();
 }
 
 function up(e: PointerEvent): void {
   if (!live || e.pointerId !== live.id) return;
   const now = performance.now();
   const l = live;
-  clearTimeout(holdTimer);
-  const s = strengthNow(l, now);
-  if (drag.speed(now) / diag() >= FLICK_SHATTER) {
-    breakPane(l.crack, Math.max(s, 0.8), now);
-    return;
-  }
+  clearInterval(growTimer);
+  const s = Math.max(l.s, strengthNow(l, now));
+  if (breaks(l, s, now)) return;
   live = null;
-  commit({ crack: l.crack, lines: crackLines(l.crack, reachFor(l.crack, s), b) });
-  kick();
+  land(l.crack, s, l.near, now);
 }
 
 function update(dt: number, now: number): void {
-  // Shatters happen in input and timer tasks, never inside a frame (see hold() and pointermove).
-  if (live) {
-    const s = strengthNow(live, now);
-    if (s > live.s) {
-      live.s = s;
-      live.lines = crackLines(live.crack, reachFor(live.crack, s), b);
-    }
-  }
+  // Shatters and crack growth happen in input and timer tasks, never inside a frame (see grow()).
   if (phase === "shattering" && sim) {
     const left = stepShards(sim, dt, b.h, () => sound.tinkle(shatterS));
     if (left === 0) revealed();
   }
   if (phase === "sliding" && now - slideAt >= SLIDE_MS) phase = "intact";
   particles.step(dt);
+  slivers.step(dt);
 }
 
 function render(now: number, f: FxFrame): void {
@@ -345,16 +421,25 @@ function render(now: number, f: FxFrame): void {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, b.w, b.h);
   if (phase === "intact" || phase === "cracked") {
+    // f.dx carries the wobble before the last hit.
+    ctx.setTransform(dpr, 0, 0, dpr, f.dx * dpr, 0);
     ctx.drawImage(paneLayer, 0, 0, b.w, b.h);
     ctx.drawImage(crackLayer, 0, 0, b.w, b.h);
-    if (live) strokeCrack(ctx, live.lines, flat);
+    if (live) strokeCracks(ctx, live.art, flat);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   } else if (phase === "sliding") {
     const t = Math.min(1, (now - slideAt) / SLIDE_MS);
     const e = 1 - (1 - t) ** 3;
     ctx.drawImage(paneLayer, 0, -b.h * (1 - e), b.w, b.h);
-  } else if (phase === "shattering" && sim && art) {
-    drawShards(ctx, sim, art, dpr, f.dx, f.dy, flat);
+  } else if (phase === "shattering" || phase === "revealed") {
+    if (sim && art) drawShards(ctx, sim, art, dpr, f.dx, f.dy, flat);
+    const since = now - shatterAt;
+    drawRemnant(ctx, remnantPaths, remnantAlpha(since));
+    // The reveal is lit through the hole while the glass round it darkens.
+    if (!flat && since < REMNANT_MS)
+      dimGlass(ctx, litAt, 70, Math.min(1, since / DIM_MS), b.w, b.h);
   }
+  slivers.draw(ctx);
   particles.draw(ctx);
   fx.drawFlash(ctx, now);
 }
@@ -394,7 +479,9 @@ function tick(): void {
     phase === "shattering" ||
     phase === "sliding" ||
     fx.busy(t) ||
-    particles.alive > 0;
+    particles.alive > 0 ||
+    slivers.alive > 0 ||
+    t - shatterAt < REMNANT_MS;
   if (busy) raf = requestAnimationFrame(tick);
   else last = 0;
 }
@@ -411,15 +498,12 @@ function resize(): void {
     paneCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     paintPane(paneCtx, b.w, b.h);
   }
-  if (crackCtx) {
-    crackCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    for (const c of cracks) strokeCrack(crackCtx, c.lines, flat);
-  }
+  rebuild();
   const now = performance.now();
   render(now, fx.frame(now));
 }
 
-/** Space or Enter anywhere but on a control is a medium hit; a second one breaks the pane. */
+/** Space or Enter anywhere but on a control is a medium hit near the middle; two break a pane. */
 function keyHit(e: KeyboardEvent): void {
   if (e.key !== " " && e.key !== "Enter") return;
   if (e.target instanceof HTMLElement && e.target.closest("button, a")) return;
@@ -430,18 +514,17 @@ function keyHit(e: KeyboardEvent): void {
     return;
   }
   if (phase !== "intact" && phase !== "cracked") return;
-  const prev = cracks.at(-1);
-  if (prev) {
-    breakPane(newCrack(prev.crack.hit, KEY_STRENGTH), KEY_STRENGTH, now);
-    return;
-  }
-  const k = mulberry32(paneSeed);
+  const k = mulberry32(paneSeed + hits.length * 7919);
   const p = { x: b.w * (0.3 + 0.4 * k.next()), y: b.h * (0.3 + 0.4 * k.next()) };
   const crack = newCrack(p, KEY_STRENGTH);
-  commit({ crack, lines: crackLines(crack, reachFor(crack, KEY_STRENGTH), b) });
-  phase = "cracked";
+  const near = crackDist(net, p);
+  if (dealt + damageOf(crack, KEY_STRENGTH, near) >= paneMax) {
+    breakPane(crack, KEY_STRENGTH, now);
+    return;
+  }
   playHit(KEY_STRENGTH);
-  kick();
+  flakes(p, KEY_STRENGTH);
+  land(crack, KEY_STRENGTH, near, now);
 }
 
 const showMute = (): void => {
@@ -454,8 +537,7 @@ pane.addEventListener("pointermove", (e) => {
   if (live && e.pointerId === live.id) {
     const now = performance.now();
     drag.push(now, p.x, p.y);
-    const s = strengthNow(live, now);
-    if (s >= 1) breakPane(live.crack, s, now);
+    breaks(live, strengthNow(live, now), now);
   } else approach.push(e.timeStamp, p.x, p.y);
 });
 pane.addEventListener("pointerdown", down);
@@ -499,7 +581,13 @@ if (import.meta.env.DEV) {
         return phase;
       },
       get cracks() {
-        return cracks.length + (live ? 1 : 0);
+        return hits.length + (live ? 1 : 0);
+      },
+      get damage() {
+        return { dealt, max: paneMax };
+      },
+      get components() {
+        return components(net);
       },
       get shards() {
         return sim?.n ?? 0;

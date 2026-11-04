@@ -150,3 +150,10 @@ body {
 #mute[aria-pressed="true"] {
   opacity: 0.6;
 }
+
+/* Lit through the hole while the glass round it darkens (see dimGlass). */
+.reveal.lit {
+  text-shadow:
+    0 0 2px #fff,
+    0 0 16px rgba(255, 238, 180, 0.95);
+}
