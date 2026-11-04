@@ -18,6 +18,13 @@ describe("buzz", () => {
     expect(vibrate).toHaveBeenCalledWith([12, 30, 20]);
   });
 
+  it("waits for the first tap", () => {
+    const vibrate = vi.fn(() => true);
+    vi.stubGlobal("navigator", { vibrate, userActivation: { hasBeenActive: false } });
+    expect(buzz(10)).toBe(false);
+    expect(vibrate).not.toHaveBeenCalled();
+  });
+
   it("swallows a throwing vibrate", () => {
     vi.stubGlobal("navigator", {
       vibrate: () => {

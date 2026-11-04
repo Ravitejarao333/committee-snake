@@ -29,6 +29,12 @@ describe("hit strength", () => {
     expect(at({ pressure: 0.9 })).toBeGreaterThan(at({ pressure: 0.5 }));
   });
 
+  it("never shatters on contact size or pressure alone", () => {
+    expect(at({ pressure: 1 })).toBeLessThan(0.75);
+    expect(at({ area: 100_000, pressure: 1 })).toBeLessThan(0.75);
+    expect(at({ pressure: 1, heldMs: HOLD_SHATTER_MS })).toBe(1);
+  });
+
   it("stays within 0..1 for any input", () => {
     for (const o of [
       { approach: 1e9 },

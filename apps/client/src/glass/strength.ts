@@ -26,13 +26,17 @@ export interface HitInput {
 export const HOLD_SHATTER_MS = 450;
 /** A release faster than this many pane diagonals per second shatters. */
 export const FLICK_SHATTER = 2.5;
+/** The most contact area or pressure can add, as a share of the swing range. */
+const CONTACT = 0.6;
 
 export function strength(h: HitInput): number {
   const diag = Math.max(1, h.diag);
   const swing = clamp01(h.approach / diag / 3);
   const flick = clamp01(h.flick / diag / FLICK_SHATTER);
-  const area = h.area > 1 ? clamp01((Math.sqrt(h.area) - 20) / 50) : 0;
-  const pressure = h.pressure > 0 && h.pressure !== 0.5 ? clamp01(h.pressure) : 0;
+  // Contact size and pressure only set how big the first crack is: some Android touchscreens
+  // report full pressure for any tap, so on their own they never shatter.
+  const area = h.area > 1 ? CONTACT * clamp01((Math.sqrt(h.area) - 20) / 50) : 0;
+  const pressure = h.pressure > 0 && h.pressure !== 0.5 ? CONTACT * clamp01(h.pressure) : 0;
   const hold = clamp01(h.heldMs / HOLD_SHATTER_MS);
   return clamp01(0.2 + 0.8 * Math.max(swing, flick, area, pressure) + 0.8 * hold);
 }

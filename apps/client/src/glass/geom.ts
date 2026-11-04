@@ -54,3 +54,15 @@ export function centroid(p: readonly Pt[]): Pt {
   });
   return { x: x / (6 * a), y: y / (6 * a) };
 }
+
+/** Even-odd point-in-polygon. */
+export function contains(poly: readonly Pt[], p: Pt): boolean {
+  let hit = false;
+  poly.forEach((a, i) => {
+    const b = ring(poly, i + 1);
+    if (a.y > p.y !== b.y > p.y && p.x < a.x + ((p.y - a.y) * (b.x - a.x)) / (b.y - a.y)) {
+      hit = !hit;
+    }
+  });
+  return hit;
+}
