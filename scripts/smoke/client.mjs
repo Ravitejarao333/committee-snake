@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const url = process.argv[2] ?? "http://localhost:5173";
+const snakeUrl = new URL("/snake", url).href;
 // Default to a fresh private dir rather than a predictable shared /tmp path.
 const outDir = process.argv[3] ?? mkdtempSync(join(tmpdir(), "cs-smoke-"));
 const chromePath =
@@ -217,7 +218,7 @@ async function load(cdp, sc) {
     origin: new URL(url).origin,
     storageTypes: "local_storage",
   });
-  await cdp.send("Page.navigate", { url });
+  await cdp.send("Page.navigate", { url: snakeUrl });
   await waitFor(cdp, "lobby", (s) => s.phase === "lobby");
   await evaluate(cdp, "document.fonts.ready.then(() => true)");
   await sleep(400);

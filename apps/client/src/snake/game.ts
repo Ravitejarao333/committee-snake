@@ -55,7 +55,7 @@ import { type BoardView, drawBoard, segmentSprite } from "./render/snake";
 import { keyVoters, rosterEntries } from "./roster";
 import { runDueTicks } from "./scheduler";
 import { autoStartAt, claim, lobbyText, MAX_SEATS, type Seat, type Seats, seatIds } from "./seats";
-import { type CopyResult, copyPng, renderShare, type ShareResult, sharePng } from "./share-browser";
+import { type CopyResult, copyPng, renderShare, type ShareResult, sharePng } from "./share-render";
 
 /** Shape of the dev-only smoke-test hook (stripped from production builds). */
 interface CsDevHook {
