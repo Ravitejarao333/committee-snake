@@ -17,6 +17,17 @@
 
 ---
 
+## Games
+
+The site is a small collection of browser games. `/` is a hub with one card per game, each with a live preview; a tap goes straight in.
+
+| Game                | Path     | What it is                                                                     |
+| ------------------- | -------- | ------------------------------------------------------------------------------ |
+| **Committee Snake** | `/snake` | Everyone votes. The snake dies. Someone gets blamed. (the rest of this README) |
+| **Break Glass**     | `/glass` | In case of boredom, break glass. Solo, local-only. _Coming soon._              |
+
+Each game is its own HTML page with its own JavaScript budget ([ADR 0008](docs/adr/0008-multi-game-client.md)).
+
 ## How it works
 
 One snake per room. Every player holds a **standing vote** (↑ ↓ ← →). Each tick the server counts the live votes and the snake turns toward the winner. Eat, grow, speed up, die, and then a 6-second **Blame Screen** shows the fatal tally, names the _Assassins_, hands out awards, and offers a one-tap PNG share.
@@ -40,9 +51,13 @@ The full design, with every rule and every decision, lives in **[docs/PLAN.md](d
 ```
 packages/shared/   pure sim, tally, RNG, awards, protocol  ← all game rules live here
 apps/server/       Worker router + RoomDO + LobbyDO
-apps/client/       browser client
+apps/client/       browser client: one Vite app, one HTML page per game
+  src/hub/         the games hub at /
+  src/snake/       Committee Snake at /snake
+  src/glass/       Break Glass at /glass
+  src/fx/, src/ui/ shared audio engine, PNG share, share-card footer
 docs/              PLAN.md (design doc) and ADRs
-scripts/           setup-github.sh (one-time repo bootstrap)
+scripts/           setup-github.sh (one-time repo bootstrap), replay, browser and route smoke tests
 ```
 
 ## Controls
@@ -78,7 +93,7 @@ Requires **Node 24** (see `.nvmrc`; the minimum is **22.22.1**, which lint-stage
 
 ```bash
 pnpm install          # also installs git hooks via husky
-pnpm dev              # client on http://localhost:5173, API via wrangler dev
+pnpm dev              # hub on http://localhost:5173, Snake at /snake; API via wrangler dev
 pnpm test             # vitest
 pnpm check            # lint + typecheck + test — same as CI
 ```
@@ -91,11 +106,23 @@ pnpm test:coverage               # coverage report (thresholds enforced in CI)
 pnpm lint:fix                    # Biome auto-fix + import sorting
 pnpm knip                        # unused files/exports/deps
 pnpm --filter @committee-snake/server cf-typegen   # regenerate Worker binding types
+node scripts/smoke/client.mjs    # headless-Chrome smoke of the hub and Snake (needs the client dev server)
+node scripts/smoke/routes.mjs    # page routing behind the Worker (needs `pnpm --filter @committee-snake/server dev`)
 ```
+
+### Size budgets
+
+`pnpm build` fails if any page's JavaScript is over budget. A page's size is every chunk it loads, static or dynamic, so a chunk shared by two pages counts toward both.
+
+| Page     | Budget (raw) |
+| -------- | ------------ |
+| `/` hub  | 15 KB        |
+| `/snake` | 40 KB        |
+| `/glass` | 60 KB        |
 
 ## Deploying
 
-Production is one Worker, `committee-snake` ([ADR 0006](docs/adr/0006-single-worker-assets-and-api.md)). It serves the built client from `apps/client/dist` as Workers Static Assets and runs the router only for `/room`, `/room/*`, `/public/*` and `/health`. Any other path is a static file, or `index.html` if no file matches. The live URL is `https://committee-snake.<your-subdomain>.workers.dev`. Deploy builds the client, then runs `wrangler deploy --env production` from `apps/server`; there is no separate Pages project.
+Production is one Worker, `committee-snake` ([ADR 0006](docs/adr/0006-single-worker-assets-and-api.md)). It serves the built client from `apps/client/dist` as Workers Static Assets and runs the router only for `/room`, `/room/*`, `/public/*` and `/health`. Any other path is a static file. The client builds to three pages, `index.html` (the hub), `snake.html` and `glass.html`. Static Assets serves `snake.html` at `/snake` and redirects `/snake.html` and `/snake/` there; `glass.html` works the same way. A path with no matching file gets `index.html`, so unknown URLs land on the hub. The live URL is `https://committee-snake.<your-subdomain>.workers.dev`. Deploy builds the client, then runs `wrangler deploy --env production` from `apps/server`; there is no separate Pages project.
 
 The Deploy workflow is skipped until you add the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets and set the repository variable `DEPLOY_ENABLED=true` (`gh variable set DEPLOY_ENABLED --body true`).
 
