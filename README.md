@@ -24,9 +24,20 @@ The site is a small collection of browser games. `/` is a hub with one card per 
 | Game                | Path     | What it is                                                                     |
 | ------------------- | -------- | ------------------------------------------------------------------------------ |
 | **Committee Snake** | `/snake` | Everyone votes. The snake dies. Someone gets blamed. (the rest of this README) |
-| **Break Glass**     | `/glass` | In case of boredom, break glass. Solo, local-only. _Coming soon._              |
+| **Break Glass**     | `/glass` | In case of boredom, break glass. Solo, local-only.                             |
 
 Each game is its own HTML page with its own JavaScript budget ([ADR 0008](docs/adr/0008-multi-game-client.md)).
+
+### Break Glass
+
+A red emergency box with a pane of glass. A press cracks it under your finger in the same frame; a second tap near a crack, a press held for about half a second, or a hard flick (on desktop, a fast swing into the click) breaks it. The shards fall, bounce once and fade, each with its own tinkle, and behind the pane is one of 60 lines: fortunes, terrible tips, committee memos and the odd prize. Tap the line to share it as a 1200×630 card; tap elsewhere, or wait two seconds, for a new pane.
+
+- **Panes are numbered.** Every pane (#1 to #9999) always hides the same line, so `/glass#1234` reproduces a pane someone shared. New panes don't repeat any of the last 10 lines.
+- **All sound is synthesized** with Web Audio: an impact thump, a crackle of noise grains and a ping per landing shard, through a small room reverb. Harder hits are louder and brighter. On phones the first tap turns sound on when it's released.
+- **Hit strength** comes from the mouse's speed into the click, or for touch from how long the press lasts and how fast it flicks (contact size and pressure, where reported, only make the first crack bigger). iOS reports neither, so there it's duration and flick.
+- **Reduced motion** turns off the screen shake and the first-shatter slow motion; shards and the flash stay.
+- **The counter is local** (`localStorage`). The strip has a hidden slot for a worldwide count, which needs Worker support later.
+- If frames run long during a shatter, later shatters use fewer shards and fewer tinkle voices.
 
 ## How it works
 
@@ -107,6 +118,7 @@ pnpm lint:fix                    # Biome auto-fix + import sorting
 pnpm knip                        # unused files/exports/deps
 pnpm --filter @committee-snake/server cf-typegen   # regenerate Worker binding types
 node scripts/smoke/client.mjs    # headless-Chrome smoke of the hub and Snake (needs the client dev server)
+node scripts/smoke/glass.mjs     # headless-Chrome smoke of Break Glass, with a frame budget (needs the client dev server)
 node scripts/smoke/routes.mjs    # page routing behind the Worker (needs `pnpm --filter @committee-snake/server dev`)
 ```
 
@@ -114,11 +126,11 @@ node scripts/smoke/routes.mjs    # page routing behind the Worker (needs `pnpm -
 
 `pnpm build` fails if any page's JavaScript is over budget. A page's size is every chunk it loads, static or dynamic, so a chunk shared by two pages counts toward both.
 
-| Page     | Budget (raw) |
-| -------- | ------------ |
-| `/` hub  | 15 KB        |
-| `/snake` | 40 KB        |
-| `/glass` | 60 KB        |
+| Page     | Budget (raw) | Now (raw / gzip)    |
+| -------- | ------------ | ------------------- |
+| `/` hub  | 15 KB        | 14,347 B / 6,994 B  |
+| `/snake` | 40 KB        | 39,077 B / 16,709 B |
+| `/glass` | 60 KB        | 28,821 B / 13,346 B |
 
 ## Deploying
 

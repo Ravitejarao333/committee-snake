@@ -1,47 +1,25 @@
-import { mulberry32 } from "@committee-snake/shared";
+import { type Crack, crackAt, crackLines, reachFor } from "../glass/crack";
 
-/** Crack length at rest, and how fast it grows / recedes (fraction per ms). */
+/** Crack spread at rest, and how fast it grows / recedes (fraction per ms). */
 const REST = 0.12;
 const GROW_PER_MS = 1 / 700;
 const SHRINK_PER_MS = 1 / 400;
-const RAYS = 7;
-const STEPS = 9;
-
-type Point = readonly [number, number];
-
-/** Seeded hairline: jittered rays from one point, in unit coordinates of the pane. */
-function hairline(seed: number): Point[][] {
-  const rng = mulberry32(seed);
-  const rays: Point[][] = [];
-  for (let r = 0; r < RAYS; r++) {
-    let a = ((r + rng.next() * 0.6) / RAYS) * Math.PI * 2;
-    const len = 0.25 + rng.next() * 0.45;
-    let x = 0;
-    let y = 0;
-    const ray: Point[] = [[0, 0]];
-    for (let i = 0; i < STEPS; i++) {
-      a += (rng.next() - 0.5) * 0.5;
-      x += (Math.cos(a) * len) / STEPS;
-      y += (Math.sin(a) * len) / STEPS;
-      ray.push([x, y]);
-    }
-    rays.push(ray);
-  }
-  return rays;
-}
+/** The same seeded crack every visit, from Break Glass's own geometry. */
+const SEED = 7;
+const HIT_STRENGTH = 0.6;
 
 interface GlassPreview {
   readonly growth: number;
 }
 
-/** A frosted pane on a red box; its hairline crack grows while the card is hovered or pressed. */
+/** A frosted pane on a red box; its Break Glass crack spreads while the card is hovered or pressed. */
 export function startGlassPreview(
   canvas: HTMLCanvasElement,
   card: HTMLElement,
   still: boolean,
 ): GlassPreview {
   const ctx = canvas.getContext("2d");
-  const rays = hairline(7);
+  let crack: Crack | null = null;
   let growth = still ? 1 : REST;
   let target = REST;
   let last = 0;
@@ -72,10 +50,8 @@ export function startGlassPreview(
     ctx.lineTo(w * 0.13, h);
     ctx.fill();
 
-    const ox = w * 0.62;
-    const oy = h * 0.4;
-    const s = Math.min(w, h);
-    const shown = growth * STEPS;
+    if (!crack) return;
+    const lines = crackLines(crack, reachFor(crack, growth), { w, h });
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     for (const [stroke, width] of [
@@ -85,16 +61,11 @@ export function startGlassPreview(
       ctx.strokeStyle = stroke;
       ctx.lineWidth = width * devicePixelRatio;
       ctx.beginPath();
-      for (const ray of rays) {
-        ctx.moveTo(ox, oy);
-        for (let i = 1; i <= Math.ceil(shown) && i < ray.length; i++) {
-          const p = ray[i];
-          const q = ray[i - 1];
-          if (!p || !q) continue;
-          // The last segment grows smoothly instead of popping in.
-          const f = Math.min(1, shown - (i - 1));
-          ctx.lineTo(ox + (q[0] + (p[0] - q[0]) * f) * s, oy + (q[1] + (p[1] - q[1]) * f) * s);
-        }
+      for (const line of [...lines.rays, ...lines.rings, ...lines.branches]) {
+        line.forEach((p, i) => {
+          if (i) ctx.lineTo(p.x, p.y);
+          else ctx.moveTo(p.x, p.y);
+        });
       }
       ctx.stroke();
     }
@@ -131,6 +102,8 @@ export function startGlassPreview(
   const resize = (): void => {
     canvas.width = Math.round(canvas.clientWidth * devicePixelRatio);
     canvas.height = Math.round(canvas.clientHeight * devicePixelRatio);
+    const b = { w: canvas.width, h: canvas.height };
+    crack = crackAt({ x: b.w * 0.62, y: b.h * 0.4 }, HIT_STRENGTH, SEED, b);
     draw();
   };
   new ResizeObserver(resize).observe(canvas);

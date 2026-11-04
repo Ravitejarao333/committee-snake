@@ -1,40 +1,152 @@
 html,
 body {
+  position: fixed;
+  inset: 0;
   margin: 0;
-  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
   background: #111;
   color: #fff;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .box {
   box-sizing: border-box;
-  min-height: 100dvh;
+  position: absolute;
+  inset: 0;
   margin: 0 auto;
-  max-width: 560px;
-  padding: 48px 24px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
+  gap: 10px;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
   background: #a3161a;
-  text-align: center;
+  box-shadow: inset 0 0 0 4px #7d0f12;
+}
+
+@media (min-width: 700px) {
+  .box {
+    width: min(100vw, calc(100dvh * 9 / 16));
+    height: 100dvh;
+    inset: 0 0 auto;
+  }
 }
 
 .label {
   margin: 0;
+  text-align: center;
   font-weight: 800;
-  font-size: clamp(20px, 6vw, 30px);
+  font-size: clamp(15px, 4.6vw, 24px);
   letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.pane {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #f4efe6;
+  box-shadow: inset 0 0 0 3px #5e0b0d;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.pane canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.reveal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  max-width: calc(100% - 24px);
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-weight: 700;
+  font-size: clamp(17px, 5vw, 24px);
   line-height: 1.25;
+  color: #222;
+  cursor: pointer;
 }
 
-.soon {
+#reveal-next {
+  visibility: hidden;
+}
+
+.reveal[data-kind="tip"] {
+  font-style: italic;
+}
+
+.reveal[data-kind="memo"] {
+  padding: 6px 10px;
+  border: 3px double #a3161a;
+  color: #a3161a;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  text-transform: uppercase;
+  transform: translate(-50%, -50%) rotate(-4deg);
+}
+
+.reveal[data-kind="prize"] {
+  color: #8a5a00;
+  text-shadow: 0 1px 0 #ffe9a8;
+}
+
+.hint {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
   margin: 0;
-  opacity: 0.8;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 14px;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.4s;
 }
 
-.back {
+.hint.gone {
+  opacity: 0;
+}
+
+.strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.strip output {
+  font-variant-numeric: tabular-nums;
+}
+
+.strip button,
+.strip a {
+  font: inherit;
   color: #fff;
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.tools {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+
+#mute[aria-pressed="true"] {
+  opacity: 0.6;
 }
