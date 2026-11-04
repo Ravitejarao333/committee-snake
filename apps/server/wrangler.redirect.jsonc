@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // The site's old Worker. Links to committee-snake.<subdomain>.workers.dev already exist, so it
+  // stays up and 301s every request to the same path on cheap-thrills.<subdomain>.workers.dev.
+  // Deploy: wrangler deploy -c wrangler.redirect.jsonc (the Deploy workflow runs it after the site).
+  "name": "committee-snake",
+  "main": "src/redirect.ts",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  // This Worker used to own the game's Durable Objects. They never held state (the room code
+  // is still the M3 skeleton), so v2 deletes them; the cheap-thrills Worker has its own.
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["RoomDO", "LobbyDO"] },
+    { "tag": "v2", "deleted_classes": ["RoomDO", "LobbyDO"] }
+  ]
+}

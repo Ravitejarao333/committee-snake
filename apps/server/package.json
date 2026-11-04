@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm --filter @committee-snake/client build && wrangler dev",
-    "build": "wrangler deploy --dry-run --outdir dist",
-    "deploy": "wrangler deploy --env production",
+    "build": "wrangler deploy --dry-run --outdir dist && wrangler deploy --dry-run -c wrangler.redirect.jsonc --outdir dist/redirect",
+    "deploy": "wrangler deploy --env production && wrangler deploy -c wrangler.redirect.jsonc",
     "typecheck": "tsc -p tsconfig.json",
     "cf-typegen": "wrangler types"
   },
