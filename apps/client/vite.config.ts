@@ -8,6 +8,6 @@ export default defineConfig({
     // One HTML entry per page, served at /snake etc. (ADR 0008).
     // The manifest drives the per-page JS budgets (scripts/check-size.ts).
     manifest: true,
-    rolldownOptions: { input: { snake: "snake.html" } },
+    rolldownOptions: { input: { hub: "index.html", snake: "snake.html" } },
   },
 });

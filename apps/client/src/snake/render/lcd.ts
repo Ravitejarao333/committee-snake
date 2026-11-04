@@ -1,21 +1,14 @@
 import type { Cell } from "@committee-snake/shared";
+import { COLS, cellOrigin, drawBitmap, FONT, HUD_ROWS, LCD_BG, LCD_PX, ROWS } from "./dots";
 import { CELL_DOTS, computeLcdLayout, type LcdLayout } from "./layout";
 import { type Bitmap, DIGITS } from "./sprites";
 
-export const COLS = 32;
-const ROWS = 20;
-const HUD_ROWS = 2;
-/** Board size in cells plus the HUD rows above it (the bars' frame goes around both). */
-export const GRID = { cols: COLS, rows: ROWS, hudRows: HUD_ROWS } as const;
 /** Tally-bar frame cells on each side of the board. */
 const FRAME = 2;
-export const LCD_BG = "#c7f0d8";
-export const LCD_PX = "#43523d";
 const GHOST_ALPHA = 0.06;
 const SHIMMER_ALPHA = 0.02;
 const AFTERIMAGE_MS = 120;
 const AFTERIMAGE_ALPHA = 0.45;
-export const FONT = '"Press Start 2P", ui-monospace, monospace';
 
 export interface Motion {
   shimmer: boolean;
@@ -64,27 +57,6 @@ export interface Lcd {
   drawBoard(draw: (ctx: CanvasRenderingContext2D, layout: LcdLayout) => void): void;
   /** The 60 fps composite: bg, ghost grid, board, afterimage, overlay, shimmer. */
   composite(now: number, frame: Frame): void;
-}
-
-/** Device-px top-left of a board cell (the HUD rows and the bar frame sit around it). */
-export function cellOrigin(l: LcdLayout, x: number, y: number): [number, number] {
-  return [(x + l.frame) * l.pitch, (y + HUD_ROWS + l.frame) * l.pitch];
-}
-
-/** Draw a bitmap's lit dots as whole-pixel squares of side `unit`. */
-export function drawBitmap(
-  ctx: CanvasRenderingContext2D,
-  b: Bitmap,
-  x0: number,
-  y0: number,
-  unit: number,
-): void {
-  for (let j = 0; j < b.length; j++) {
-    const row = b[j] ?? "";
-    for (let i = 0; i < row.length; i++) {
-      if (row[i] === "#") ctx.fillRect(x0 + i * unit, y0 + j * unit, unit, unit);
-    }
-  }
 }
 
 /** Largest multiple of 8 device px (Press Start 2P's grid) that fits, min 8. */

@@ -41,11 +41,11 @@ import {
 import { createBarsPainter } from "./render/bars-draw";
 import { blameSpeech, fitBlame, lineText, softkeyRect } from "./render/blame";
 import { drawBlame } from "./render/blame-draw";
+import { GRID } from "./render/dots";
 import type { LcdLayout } from "./render/layout";
 import {
   type Afterimage,
   drawHud,
-  GRID,
   type Layer,
   type Lcd,
   type Motion,

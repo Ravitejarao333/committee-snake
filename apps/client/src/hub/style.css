@@ -1,0 +1,152 @@
+:root {
+  color-scheme: dark;
+  --bg: #111;
+  --card: #1a1a1a;
+  --card-hover: #202020;
+  --line: #2c2c2c;
+  --ink: #ececec;
+  --muted: #8f8f8f;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.hub {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+h1 {
+  margin: 8px 0 0;
+  font-size: clamp(22px, 5vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.games {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+@media (min-width: 900px) {
+  .games {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.card:hover {
+  background: var(--card-hover);
+  border-color: #3a3a3a;
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.preview {
+  aspect-ratio: 16 / 10;
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  margin-bottom: 8px;
+}
+
+.preview canvas {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.preview-snake {
+  background: #c7f0d8;
+}
+
+.preview-glass {
+  background: #a3161a;
+  padding: 10px;
+}
+
+.preview-glass canvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+}
+
+h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.hook {
+  margin: 0;
+  color: #cfcfcf;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.playing {
+  margin: auto 0 0;
+  padding-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+footer {
+  margin-top: auto;
+  padding-top: 8px;
+  font-size: 14px;
+}
+
+footer a {
+  color: var(--muted);
+}
+
+footer a:hover {
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+}

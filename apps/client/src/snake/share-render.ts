@@ -4,7 +4,7 @@ import { canvasPng, drawShareFooter, SHARE_H, SHARE_W, shareLayout } from "../ui
 import { SITE_NAME } from "../ui/site";
 import { fitBlame } from "./render/blame";
 import { drawBlame } from "./render/blame-draw";
-import { drawBitmap, FONT, LCD_BG, LCD_PX } from "./render/lcd";
+import { drawBitmap, FONT, LCD_BG, LCD_PX } from "./render/dots";
 import { GLYPH } from "./render/sprites";
 
 const FILE_NAME = "committee-snake-blame.png";

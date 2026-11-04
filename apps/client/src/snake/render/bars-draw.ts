@@ -12,8 +12,8 @@ import {
   trackRect,
   tween,
 } from "./bars";
+import { drawBitmap } from "./dots";
 import type { LcdLayout } from "./layout";
-import { drawBitmap } from "./lcd";
 import { type Bitmap, DIGITS, GLYPH, rotate } from "./sprites";
 
 /** What the bars show this frame. */

@@ -7,6 +7,7 @@ import { checkPages, type Manifest } from "./budget.ts";
 const KB = 1024;
 /** Raw (minified, not gzipped) JS bytes per HTML entry. */
 const BUDGETS: Record<string, number> = {
+  "index.html": 15 * KB,
   "snake.html": 40 * KB,
 };
 
