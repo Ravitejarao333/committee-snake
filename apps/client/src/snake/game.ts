@@ -21,6 +21,7 @@ import {
   type VoteCount,
   type VoteQueue,
 } from "@committee-snake/shared";
+import { type CopyResult, copyPng, type ShareResult } from "../fx/share";
 import type { Audio } from "./audio";
 import type { InputHandlers } from "./input";
 import type { KeyAction } from "./keymap";
@@ -55,7 +56,7 @@ import { type BoardView, drawBoard, segmentSprite } from "./render/snake";
 import { keyVoters, rosterEntries } from "./roster";
 import { runDueTicks } from "./scheduler";
 import { autoStartAt, claim, lobbyText, MAX_SEATS, type Seat, type Seats, seatIds } from "./seats";
-import { type CopyResult, copyPng, renderShare, type ShareResult, sharePng } from "./share-render";
+import { renderShare, shareBlame } from "./share-render";
 
 /** Shape of the dev-only smoke-test hook (stripped from production builds). */
 interface CsDevHook {
@@ -255,7 +256,7 @@ export function createDriver(lcd: Lcd, phone: Phone, audio: Audio): Driver {
     if (phase.name === "blame" && isShareKey(a)) {
       if (blame) {
         const names = new Map(seats.map((s) => [s.id, s.name]));
-        sharePng(renderShare(blame, names)).then((result) => {
+        shareBlame(renderShare(blame, names)).then((result) => {
           lastShare = result;
         });
       }
@@ -296,7 +297,7 @@ export function createDriver(lcd: Lcd, phone: Phone, audio: Audio): Driver {
         y >= keyRect.y &&
         y < keyRect.y + keyRect.h
       ) {
-        sharePng(renderShare(blame, names)).then((result) => {
+        shareBlame(renderShare(blame, names)).then((result) => {
           lastShare = result;
         });
       }

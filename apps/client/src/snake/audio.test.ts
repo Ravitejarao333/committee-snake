@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultMuted, EDGE_MS, GAIN, SOUNDS } from "./audio";
+import { EDGE_MS, GAIN, SOUNDS } from "./audio";
 
 const total = (name: keyof typeof SOUNDS): number => SOUNDS[name].reduce((s, n) => s + n.ms, 0);
 
@@ -32,15 +32,5 @@ describe("SOUNDS (docs/PLAN.md §2.4)", () => {
       for (const n of notes) expect(n.ms).toBeGreaterThan(2 * EDGE_MS);
     }
     expect(GAIN).toBeLessThanOrEqual(0.1);
-  });
-});
-
-describe("defaultMuted", () => {
-  it("honours the stored preference, else mutes touch-only devices", () => {
-    expect(defaultMuted("1", false)).toBe(true);
-    expect(defaultMuted("0", true)).toBe(false);
-    expect(defaultMuted(null, true)).toBe(true);
-    expect(defaultMuted(null, false)).toBe(false);
-    expect(defaultMuted("junk", false)).toBe(false);
   });
 });
