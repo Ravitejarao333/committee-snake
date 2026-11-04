@@ -478,7 +478,7 @@ async function hub(cdp, sc) {
     `titles, hooks and "— playing" slots: ${JSON.stringify(page.cards)}`,
   );
   check(
-    page.footer.length === 1 && page.footer[0].includes("github.com"),
+    page.footer.length === 1 && new URL(page.footer[0]).hostname === "github.com",
     `footer is one GitHub link (${page.footer})`,
   );
   check(page.scrollW <= page.innerW, `no sideways scroll (${page.scrollW} ≤ ${page.innerW})`);
