@@ -10,6 +10,6 @@
       // apps/client/dist (the Worker's static assets) before the server.
       "ignoreDependencies": ["@committee-snake/client"]
     },
-    "apps/client": { "entry": ["index.html", "snake.html"] }
+    "apps/client": { "entry": ["index.html", "snake.html", "glass.html"] }
   }
 }

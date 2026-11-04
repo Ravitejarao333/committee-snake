@@ -9,6 +9,7 @@ const KB = 1024;
 const BUDGETS: Record<string, number> = {
   "index.html": 15 * KB,
   "snake.html": 40 * KB,
+  "glass.html": 60 * KB,
 };
 
 const dist = join(import.meta.dirname, "..", "dist");
