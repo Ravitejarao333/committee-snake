@@ -1,7 +1,7 @@
 import type { BlameReport, PlayerId } from "@committee-snake/shared";
 import { type ShareResult, sharePng } from "../fx/share";
 import { canvasPng, drawShareFooter, SHARE_H, SHARE_W, shareLayout } from "../ui/share-footer";
-import { SITE_NAME } from "../ui/site";
+import { shareLabel } from "../ui/site";
 import { fitBlame } from "./render/blame";
 import { drawBlame } from "./render/blame-draw";
 import { drawBitmap, FONT, LCD_BG, LCD_PX } from "./render/dots";
@@ -14,7 +14,7 @@ export function renderShare(
   report: BlameReport,
   names: ReadonlyMap<PlayerId, string>,
 ): Promise<Blob> {
-  const label = `${SITE_NAME} · ${location.host}`;
+  const label = shareLabel(location.host);
   const s = shareLayout(SHARE_W, SHARE_H, label.length);
   const canvas = document.createElement("canvas");
   canvas.width = SHARE_W;

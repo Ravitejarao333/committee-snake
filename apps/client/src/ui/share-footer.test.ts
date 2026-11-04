@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { SHARE_H, SHARE_W, shareLayout } from "./share-footer";
 
 describe("shareLayout", () => {
-  const chars = "committee-snake · localhost:5173".length;
+  const chars = "cheapthrills · localhost:5173".length;
   const s = shareLayout(SHARE_W, SHARE_H, chars);
 
   it("splits 1200x630 into the blame area and a 70 px footer that never overlap", () => {
