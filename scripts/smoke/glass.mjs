@@ -3,8 +3,9 @@
 // 1. pnpm --filter @committee-snake/client dev        (serves http://localhost:5173)
 // 2. node scripts/smoke/glass.mjs [url] [outDir]       (CHROME_PATH overrides the browser)
 // /glass#1234 at 390×844@3× with touch and a 4× CPU throttle, at 1366×768 with a mouse, and with
-// reduced motion: crack on press, shatter on a second tap / long press / fast swing, the reveal,
-// the counter across reloads, the share PNG, the next pane, and the per-frame budget.
+// reduced motion: crack on press, the damage model (5 centre taps, 7 edge taps, one long press or
+// hard swipe each shatter), the crack network and creak, the reveal, the counter across reloads,
+// the share PNG, the next pane, and the per-frame budget.
 // Exits 1 on any failed check or console error/warning. Needs the dev-only `__glass` hook.
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -127,6 +128,7 @@ const glass = (cdp) =>
       cracks: g.cracks, shards: g.shards, broken: g.broken, paneSeed: g.paneSeed, reveal: g.reveal,
       shakeMs: g.shakeMs, minScale: Math.min(1, ...g.timeScaleLog), audioState: g.audioState,
       soundsPlayed: g.soundsPlayed, lastShare: g.lastShare, breakMs: g.breakMs,
+      damage: g.damage, components: g.components,
       revealText: document.getElementById("reveal").textContent,
       last: document.getElementById("last").textContent,
       count: document.querySelector("#broken [data-local]").textContent,
@@ -166,8 +168,11 @@ async function pointIn(cdp, selector, fx = 0.5, fy = 0.5) {
   if (!result.value) throw new Error(`nothing at ${selector}`);
   return result.value;
 }
-/** Press at `p` (touch or left mouse), run `during` while down, then release. */
-async function pressAt(cdp, sc, p, during = async () => undefined) {
+/**
+ * Press at `p` (touch or left mouse), run `during` while down, then release. The mouse rests on
+ * `p` first so the jump there doesn't read as a swing, unless `swing` is set.
+ */
+async function pressAt(cdp, sc, p, during = async () => undefined, swing = false) {
   if (sc.mobile) {
     await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [p] });
     await during();
@@ -175,10 +180,28 @@ async function pressAt(cdp, sc, p, during = async () => undefined) {
   } else {
     const btn = { ...p, button: "left", clickCount: 1 };
     await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...p });
+    if (!swing) await sleep(80);
     await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", ...btn });
     await during();
     await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...btn });
   }
+}
+/** Tap each point in turn until the pane breaks; how many taps it took (or Infinity). */
+async function tapUntilBroken(cdp, sc, pts) {
+  const before = (await glass(cdp)).broken;
+  for (let i = 0; i < pts.length; i++) {
+    await pressAt(cdp, sc, pts[i]);
+    await sleep(60);
+    const s = await glass(cdp);
+    if (s.broken > before) return i + 1;
+  }
+  return Number.POSITIVE_INFINITY;
+}
+/** From the reveal, tap beside it for the next pane. */
+async function nextPaneNow(cdp, sc) {
+  await waitFor(cdp, "revealed", (x) => x.phase === "revealed", 5_000);
+  await pressAt(cdp, sc, await pointIn(cdp, "#pane", 0.05, 0.95));
+  await waitFor(cdp, "pane", (x) => x.phase === "intact", 3_000);
 }
 const pixels = (cdp) =>
   evaluate(
@@ -312,10 +335,27 @@ async function run(cdp, sc) {
   );
   await shot(cdp, `${sc.name}-2-crack`);
 
-  // 2. A second tap nearby breaks the pane.
-  await pressAt(cdp, sc, { x: a.x + 24, y: a.y + 18 });
+  // 2. Taps far apart join one crack network, each with a creak, and the pane holds.
+  await pressAt(cdp, sc, await pointIn(cdp, "#pane", 0.15, 0.8));
+  await pressAt(cdp, sc, await pointIn(cdp, "#pane", 0.85, 0.15));
+  await sleep(100);
+  s = await glass(cdp);
+  check(
+    s.phase === "cracked" && s.cracks === 3 && s.components < 3,
+    `3 spread taps: one network in ${s.components} piece(s) (<3), ${s.damage.dealt.toFixed(0)}/${s.damage.max.toFixed(0)} damage`,
+  );
+  check(s.soundsPlayed.creak >= 3, `a creak under each hit (${s.soundsPlayed.creak})`);
+  await shot(cdp, `${sc.name}-2b-network`);
+  // Taps in the middle finish it off.
+  const c0 = await pointIn(cdp, "#pane", 0.5, 0.5);
+  const more = await tapUntilBroken(
+    cdp,
+    sc,
+    Array.from({ length: 6 }, (_, i) => ({ x: c0.x + 9 * i, y: c0.y - 7 * i })),
+  );
+  check(more <= 5, `centre taps finish the damaged pane (${more} more)`);
   s = await waitFor(cdp, "shattering", (x) => x.phase === "shattering", 2_000);
-  check(s.shards > 0 && s.shards <= 48, `second tap shatters into ${s.shards} shards (≤48)`);
+  check(s.shards > 0 && s.shards <= 48, `the pane shatters into ${s.shards} shards (≤48)`);
   await sleep(120);
   await shot(cdp, `${sc.name}-3-shatter`);
   s = await waitFor(cdp, "revealed", (x) => x.phase === "revealed", 5_000);
@@ -343,9 +383,34 @@ async function run(cdp, sc) {
   s = await waitFor(cdp, "next pane", (x) => x.phase === "intact" && x.paneSeed !== 1234, 4_000);
   check(true, `next pane #${s.paneSeed} after 2 s`);
 
-  // 4. One gesture shatters: a long press, or on desktop a fast swing into the click.
-  const b = await pointIn(cdp, "#pane", 0.6, 0.6);
-  await pressAt(cdp, sc, b, async () => {
+  // 4. A fresh pane breaks in at most 5 centre taps, or 7 taps round the frame.
+  const c = await pointIn(cdp, "#pane", 0.5, 0.5);
+  const centre = await tapUntilBroken(
+    cdp,
+    sc,
+    Array.from({ length: 8 }, (_, i) => ({ x: c.x + (i % 3) * 6, y: c.y + (i % 2) * 6 })),
+  );
+  check(centre <= 5, `5 centre taps shatter (took ${centre})`);
+  await nextPaneNow(cdp, sc);
+  const ring = [
+    [0.04, 0.05],
+    [0.96, 0.3],
+    [0.5, 0.03],
+    [0.03, 0.6],
+    [0.97, 0.9],
+    [0.3, 0.97],
+    [0.97, 0.06],
+    [0.04, 0.95],
+    [0.7, 0.97],
+  ];
+  const edgePts = [];
+  for (const [fx, fy] of ring) edgePts.push(await pointIn(cdp, "#pane", fx, fy));
+  const edge = await tapUntilBroken(cdp, sc, edgePts);
+  check(edge <= 7, `7 edge taps shatter (took ${edge})`);
+  await nextPaneNow(cdp, sc);
+
+  // 5. One gesture on the centre shatters: a long press, or a hard swipe.
+  await pressAt(cdp, sc, c, async () => {
     await sleep(600);
   });
   s = await waitFor(
@@ -353,27 +418,35 @@ async function run(cdp, sc) {
     "long-press shatter",
     (x) => x.phase === "shattering" || x.phase === "revealed",
     2_000,
-  );
-  check(s.broken === 2, `a 600 ms press shatters by itself (${s.phase}, broken ${s.broken})`);
-  await waitFor(cdp, "revealed", (x) => x.phase === "revealed", 5_000);
-  if (!sc.mobile) {
-    await pressAt(cdp, sc, await pointIn(cdp, "#pane", 0.05, 0.95));
-    await waitFor(cdp, "pane", (x) => x.phase === "intact", 3_000);
-    const c = await pointIn(cdp, "#pane", 0.5, 0.5);
+  ).catch(() => glass(cdp));
+  check(s.broken === 4, `a 600 ms press shatters by itself (${s.phase}, broken ${s.broken})`);
+  await nextPaneNow(cdp, sc);
+  if (sc.mobile) {
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [c] });
+    for (let i = 1; i <= 6; i++) {
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x: c.x + i * 30, y: c.y - i * 12 }],
+      });
+      await sleep(8);
+    }
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  } else {
     for (let i = 8; i >= 1; i--) {
       await cdp.send("Input.dispatchMouseEvent", {
         type: "mouseMoved",
         x: c.x - i * 40,
         y: c.y - i * 20,
       });
+      await sleep(4);
     }
-    await pressAt(cdp, sc, c);
-    s = await waitFor(cdp, "swing shatter", (x) => x.broken === 3, 2_000).catch(() => glass(cdp));
-    check(s.broken === 3, `a fast swing into a click shatters (${s.phase}, broken ${s.broken})`);
-    await waitFor(cdp, "revealed", (x) => x.phase === "revealed", 5_000);
+    await pressAt(cdp, sc, c, undefined, true);
   }
+  s = await waitFor(cdp, "swipe shatter", (x) => x.broken === 5, 2_000).catch(() => glass(cdp));
+  check(s.broken === 5, `one hard centre swipe shatters (${s.phase}, broken ${s.broken})`);
+  await waitFor(cdp, "revealed", (x) => x.phase === "revealed", 5_000);
 
-  // 5. Frame budget over every frame drawn so far: update + draw, from performance.measure.
+  // 6. Frame budget over every frame drawn so far: update + draw, from performance.measure.
   const ms = await evaluate(cdp, "window.__glass.frameMs()");
   const p = p95(ms);
   const max = Math.max(0, ...ms);
@@ -384,7 +457,7 @@ async function run(cdp, sc) {
     `  info last shatter set-up (in its input task): ${(await glass(cdp)).breakMs.toFixed(2)} ms`,
   );
 
-  // 6. The count survives a reload.
+  // 7. The count survives a reload.
   const broken = s.broken;
   await cdp.send("Page.reload");
   await sleep(300);

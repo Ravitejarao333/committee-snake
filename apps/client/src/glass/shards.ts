@@ -1,12 +1,15 @@
 import { mulberry32 } from "@committee-snake/shared";
 import type { Crack } from "./crack";
-import { at, type Bounds, centroid, type Pt, polyArea, ring } from "./geom";
+import { at, type Bounds, centroid, clamp01, type Pt, polyArea, ring } from "./geom";
+import { SHARD_FALLOFF, SHARD_FAR, SHARD_NEAR } from "./tuning";
 
 /**
  * Pure shatter: cut the pane along a crack's rays and rings into shards that tile it exactly.
  * A cell lies between two rays and between two rings (the hit is the innermost "ring", a far
  * radius past the pane the outermost). Cells are clipped to the pane, slivers merge into a
- * neighbour, and over the cap ring cells merge outward first.
+ * neighbour, and over the cap ring cells merge outward first. The innermost ring isn't cut, so
+ * the pieces at the hit stay big, and then pieces bigger than their target size (smaller further
+ * from the hit) are halved while the cap allows.
  */
 
 export interface Shard {
@@ -142,7 +145,7 @@ export function shatter(crack: Crack, b: Bounds, maxShards: number, strength: nu
   const rings = crack.rings.length;
   const far = farArcs(crack);
   const sliver = SLIVER * b.w * b.h;
-  const cuts = Array.from({ length: rings }, (_, k) => k + 1);
+  const cuts = Array.from({ length: rings - 1 }, (_, k) => k + 2);
   let cols: Column[] = crack.rays.map((_, i) => ({ i0: i, span: 1, cuts: [...cuts] }));
 
   const cellsOf = (): Cell[] =>
@@ -181,7 +184,13 @@ export function shatter(crack: Crack, b: Bounds, maxShards: number, strength: nu
     const small = live.filter((x) => x.area < sliver);
     const whole = cols.length < 2 && (cols[0]?.cuts.length ?? 0) === 0;
     if (whole || (live.length <= maxShards && small.length === 0)) {
-      return live.map((x) => launch(x.poly, x.area, crack, b, strength));
+      const polys = refine(
+        live.map((x) => x.poly),
+        crack,
+        b,
+        maxShards,
+      );
+      return polys.map((p) => launch(p, Math.abs(polyArea(p)), crack, b, strength));
     }
     const pool = small.length > 0 ? small : live;
     const banded = pool.filter((x) => x.cuts > 0);
@@ -195,6 +204,72 @@ export function shatter(crack: Crack, b: Bounds, maxShards: number, strength: nu
       mergeCols(colArea(cells, prev) < colArea(cells, next) ? prev : x.col);
     }
   }
+}
+
+/** The part of `poly` on the side of the line through c where n·(p − c) ≥ 0. */
+function halfPlane(poly: Pt[], c: Pt, nx: number, ny: number): Pt[] {
+  const side = (p: Pt): number => (p.x - c.x) * nx + (p.y - c.y) * ny;
+  const out: Pt[] = [];
+  poly.forEach((p, i) => {
+    const q = ring(poly, i + 1);
+    const sp = side(p);
+    const sq = side(q);
+    if (sp >= 0) out.push(p);
+    if (sp >= 0 !== sq >= 0) {
+      const t = sp / (sp - sq);
+      out.push({ x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t });
+    }
+  });
+  return out.filter((p, i) => {
+    const q = ring(out, i + 1);
+    return Math.abs(p.x - q.x) > 1e-9 || Math.abs(p.y - q.y) > 1e-9;
+  });
+}
+
+/**
+ * Halve the piece furthest over its target size until none is over or the cap is reached. A
+ * piece is cut across its longest reach from the centroid, with a seeded tilt.
+ */
+function refine(polys: Pt[][], c: Crack, b: Bounds, cap: number): Pt[][] {
+  const paneArea = b.w * b.h;
+  const sliver = SLIVER * paneArea;
+  const reach = SHARD_FALLOFF * Math.hypot(b.w, b.h);
+  const target = (p: Pt): number => {
+    const t = clamp01(Math.hypot(p.x - c.hit.x, p.y - c.hit.y) / reach);
+    return paneArea * (SHARD_NEAR + (SHARD_FAR - SHARD_NEAR) * t);
+  };
+  const rng = mulberry32(c.seed ^ 0x2545f491);
+  const out = polys.map((poly) => ({ poly, m: centroid(poly), area: Math.abs(polyArea(poly)) }));
+  const stuck = new Set<Pt[]>();
+  while (out.length < cap) {
+    let best = -1;
+    let over = 1;
+    out.forEach((x, i) => {
+      const r = x.area / target(x.m);
+      if (r > over && !stuck.has(x.poly)) {
+        over = r;
+        best = i;
+      }
+    });
+    if (best < 0) break;
+    const x = at(out, best);
+    const far = x.poly.reduce((f, p) =>
+      Math.hypot(p.x - x.m.x, p.y - x.m.y) > Math.hypot(f.x - x.m.x, f.y - x.m.y) ? p : f,
+    );
+    const a = Math.atan2(far.y - x.m.y, far.x - x.m.x) + (rng.next() - 0.5) * 0.6;
+    const halves = [1, -1].map((k) => halfPlane(x.poly, x.m, k * Math.cos(a), k * Math.sin(a)));
+    const areas = halves.map((h) => (h.length >= 3 ? Math.abs(polyArea(h)) : 0));
+    if (areas.some((v) => v < sliver)) {
+      stuck.add(x.poly);
+      continue;
+    }
+    out.splice(
+      best,
+      1,
+      ...halves.map((poly, k) => ({ poly, m: centroid(poly), area: at(areas, k) })),
+    );
+  }
+  return out.map((x) => x.poly);
 }
 
 /** A shard's outward kick: faster near the hit and for harder hits, with seeded jitter. */

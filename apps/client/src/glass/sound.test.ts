@@ -1,6 +1,13 @@
 import { mulberry32 } from "@committee-snake/shared";
 import { describe, expect, it } from "vitest";
-import { crackleGrains, createGlassSound, impactParams, loudness, tinklePing } from "./sound";
+import {
+  crackleGrains,
+  creakParams,
+  createGlassSound,
+  impactParams,
+  loudness,
+  tinklePing,
+} from "./sound";
 
 describe("glass sound parameters", () => {
   it("gets louder and brighter with strength", () => {
@@ -43,12 +50,29 @@ describe("glass sound parameters", () => {
     expect(tinklePing(1, mulberry32(9)).freq).toBeGreaterThan(tinklePing(0, mulberry32(9)).freq);
   });
 
+  it("creaks low, louder and longer as the pane nears its limit", () => {
+    let prev = { gain: 0, dur: 0 };
+    for (const r of [0, 0.25, 0.5, 0.75, 1]) {
+      const p = creakParams(r, mulberry32(5));
+      expect(p.gain).toBeGreaterThan(prev.gain);
+      expect(p.dur).toBeGreaterThan(prev.dur);
+      expect(p.freqFrom).toBeLessThan(150);
+      expect(p.freqTo).toBeLessThan(p.freqFrom);
+      prev = p;
+    }
+    expect(creakParams(1, mulberry32(5)).gain).toBeGreaterThan(
+      8 * creakParams(0, mulberry32(5)).gain,
+    );
+    expect(creakParams(7, mulberry32(5))).toEqual(creakParams(1, mulberry32(5)));
+  });
+
   it("plays nothing before the first gesture", () => {
     const s = createGlassSound(mulberry32(1));
     s.impact(1);
     s.crackle(1);
     s.tinkle(1);
-    expect(s.played).toEqual({ impact: 0, crackle: 0, tinkle: 0 });
+    s.creak(1);
+    expect(s.played).toEqual({ impact: 0, crackle: 0, tinkle: 0, creak: 0 });
     expect(s.engine.state).toBeNull();
   });
 });

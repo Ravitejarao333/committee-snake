@@ -1,7 +1,8 @@
 /**
  * Synthesized glass: an impact (noise burst plus a falling sine thump), a crackle (short noise
  * grains through a bandpass), and a tinkle per shard as it lands (a sine plus an inharmonic
- * partial). Everything goes through a small feedback-delay room. All from one second of white
+ * partial), and a low creak under each hit that groans louder and longer as the pane nears its
+ * limit (a falling triangle tone with stick-slip tremolo, plus low filtered noise). Everything goes through a small feedback-delay room. All from one second of white
  * noise made once; no samples. Louder and brighter for harder hits.
  */
 import type { Rng } from "@committee-snake/shared";
@@ -34,6 +35,30 @@ interface Ping {
   decay: number;
   gain: number;
 }
+
+interface Creak {
+  /** Seconds after the hit. */
+  delay: number;
+  dur: number;
+  freqFrom: number;
+  freqTo: number;
+  /** Stick-slip tremolo rate, Hz. */
+  tremolo: number;
+  gain: number;
+}
+
+/** The creak for a pane at `ratio` (0..1) of its strength: quiet and short early, a loud groan at the end. */
+export const creakParams = (ratio: number, rng: Rng): Creak => {
+  const r = Math.min(1, Math.max(0, ratio));
+  return {
+    delay: 0.05 + 0.04 * rng.next(),
+    dur: 0.25 + 0.55 * r,
+    freqFrom: 95 + 40 * rng.next(),
+    freqTo: 55 + 15 * rng.next(),
+    tremolo: 14 + 16 * rng.next(),
+    gain: 0.03 + 0.42 * r * r,
+  };
+};
 
 /** Overall loudness for a hit of strength s. */
 export const loudness = (s: number): number => 0.4 + 0.6 * s;
@@ -73,10 +98,12 @@ export interface GlassSound {
   impact(s: number): void;
   crackle(s: number): void;
   tinkle(s: number): void;
+  /** The creak under a hit, for a pane at `ratio` of its strength. */
+  creak(ratio: number): void;
   /** Fewer simultaneous tinkles, when frames run long. */
   setVoices(n: number): void;
   /** Sounds actually started, by kind. */
-  readonly played: { impact: number; crackle: number; tinkle: number };
+  readonly played: { impact: number; crackle: number; tinkle: number; creak: number };
 }
 
 interface Graph {
@@ -117,7 +144,7 @@ function buildGraph(ctx: AudioContext): Graph {
 
 export function createGlassSound(rng: Rng): GlassSound {
   const engine = createAudioEngine({ storageKey: STORAGE_KEY, touchStartsMuted: false });
-  const played = { impact: 0, crackle: 0, tinkle: 0 };
+  const played = { impact: 0, crackle: 0, tinkle: 0, creak: 0 };
   let graph: Graph | null = null;
   let voices = TINKLE_VOICES;
   let ringing = 0;
@@ -214,6 +241,48 @@ export function createGlassSound(rng: Rng): GlassSound {
         }
       }
       played.tinkle++;
+    },
+    creak(ratio) {
+      const g = live();
+      if (!g) return;
+      const p = creakParams(ratio, rng);
+      const t = g.ctx.currentTime + p.delay;
+      const v = g.ctx.createGain();
+      v.gain.setValueAtTime(0, t);
+      v.gain.linearRampToValueAtTime(p.gain, t + 0.05);
+      v.gain.exponentialRampToValueAtTime(0.0001, t + p.dur);
+      const lp = g.ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 420;
+      lp.connect(v);
+      v.connect(g.dry);
+      // Stick-slip: a square LFO chops the tone into the ratchet of a pane under load.
+      const chop = g.ctx.createGain();
+      chop.gain.value = 0.55;
+      chop.connect(lp);
+      const lfo = g.ctx.createOscillator();
+      lfo.type = "square";
+      lfo.frequency.value = p.tremolo;
+      const depth = g.ctx.createGain();
+      depth.gain.value = 0.45;
+      lfo.connect(depth);
+      depth.connect(chop.gain);
+      const osc = g.ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(p.freqFrom, t);
+      osc.frequency.exponentialRampToValueAtTime(p.freqTo, t + p.dur);
+      osc.connect(chop);
+      const bp = g.ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 180;
+      bp.Q.value = 4;
+      bp.connect(chop);
+      burst(g, t, p.dur, bp);
+      for (const o of [osc, lfo]) {
+        o.start(t);
+        o.stop(t + p.dur + 0.02);
+      }
+      played.creak++;
     },
     setVoices(n) {
       voices = n;

@@ -1,10 +1,11 @@
 import { at, clamp01 } from "./geom";
+import { BASE_STRENGTH, FLICK_FULL, HOLD_FULL_MS, SWING_FULL, TAP_MS } from "./tuning";
 
 /**
- * Pure hit strength, 0..1. A mouse carries its swing into the click; touch and pen have no motion
- * before contact, so they use contact area and real pressure where the device reports them, plus
- * how long the press lasts and how hard the finger flicks while down. iOS reports neither area nor
- * pressure, so there it comes down to duration and flick.
+ * Pure hit strength, 0..1, from pointer velocity and press duration only: a mouse carries its swing
+ * into the click, a finger or pen flicks while down, and anything can be held. Contact area and
+ * pressure are ignored (iOS reports neither, and some Android screens report full pressure for
+ * any tap), so a plain tap is the same base hit on every device.
  */
 
 export interface HitInput {
@@ -12,33 +13,18 @@ export interface HitInput {
   approach: number;
   /** How long the press has lasted, ms. */
   heldMs: number;
-  /** Contact width × height, CSS px² (0 or ~1 when not reported). */
-  area: number;
-  /** PointerEvent.pressure. 0.5 is the "unknown" default and is ignored. */
-  pressure: number;
   /** Pointer speed while down, px/s. */
   flick: number;
   /** The pane's diagonal, to scale speeds by screen size. */
   diag: number;
 }
 
-/** A held press shatters by itself at this age. */
-export const HOLD_SHATTER_MS = 450;
-/** A release faster than this many pane diagonals per second shatters. */
-export const FLICK_SHATTER = 2.5;
-/** The most contact area or pressure can add, as a share of the swing range. */
-const CONTACT = 0.6;
-
 export function strength(h: HitInput): number {
   const diag = Math.max(1, h.diag);
-  const swing = clamp01(h.approach / diag / 3);
-  const flick = clamp01(h.flick / diag / FLICK_SHATTER);
-  // Contact size and pressure only set how big the first crack is: some Android touchscreens
-  // report full pressure for any tap, so on their own they never shatter.
-  const area = h.area > 1 ? CONTACT * clamp01((Math.sqrt(h.area) - 20) / 50) : 0;
-  const pressure = h.pressure > 0 && h.pressure !== 0.5 ? CONTACT * clamp01(h.pressure) : 0;
-  const hold = clamp01(h.heldMs / HOLD_SHATTER_MS);
-  return clamp01(0.2 + 0.8 * Math.max(swing, flick, area, pressure) + 0.8 * hold);
+  const swing = clamp01(h.approach / diag / SWING_FULL);
+  const flick = clamp01(h.flick / diag / FLICK_FULL);
+  const hold = clamp01((h.heldMs - TAP_MS) / (HOLD_FULL_MS - TAP_MS));
+  return clamp01(BASE_STRENGTH + (1 - BASE_STRENGTH) * (Math.max(swing, flick) + hold));
 }
 
 const WINDOW_MS = 60;

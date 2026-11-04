@@ -1,10 +1,11 @@
 import type { Rng } from "@committee-snake/shared";
 import { clamp01 } from "./geom";
+import { REMNANT_FADE_MS, REMNANT_MS, WOBBLE_MS, WOBBLE_PX } from "./tuning";
 
 /**
- * Screen effects for a shatter: a short decaying shake, slow motion on the session's first
- * shatter, and a flash at the hole. Reduced motion (read live) turns off shake and slow motion;
- * the flash and the shards stay.
+ * Screen effects: a short decaying shake, slow motion on the session's first shatter and a flash
+ * at the hole when the pane breaks, and a small wobble on the hit before that. Reduced motion
+ * (read live) turns off shake, wobble and slow motion; the flash and the shards stay.
  */
 
 export const SHAKE_MS = 40;
@@ -22,6 +23,16 @@ export const shakeAmp = (elapsed: number, s: number): number =>
 export const timeScaleAt = (elapsed: number): number =>
   elapsed >= 0 && elapsed < SLOWMO_MS ? SLOWMO_SCALE : 1;
 
+/** Horizontal wobble in px, `elapsed` ms into one: a decaying ~2.5 px shiver. */
+export const wobbleAt = (elapsed: number): number =>
+  elapsed < 0 || elapsed >= WOBBLE_MS
+    ? 0
+    : WOBBLE_PX * (1 - elapsed / WOBBLE_MS) * Math.sin((elapsed / WOBBLE_MS) * 7 * Math.PI);
+
+/** Opacity of the glass left in the frame, `elapsed` ms after the shatter. */
+export const remnantAlpha = (elapsed: number): number =>
+  elapsed < 0 || elapsed >= REMNANT_MS ? 0 : Math.min(1, (REMNANT_MS - elapsed) / REMNANT_FADE_MS);
+
 export const flashAlpha = (elapsed: number): number =>
   elapsed < 0 || elapsed >= FLASH_MS ? 0 : 0.9 * (1 - elapsed / FLASH_MS);
 
@@ -34,6 +45,8 @@ export interface FxFrame {
 
 export interface Fx {
   shatter(x: number, y: number, s: number, now: number): void;
+  /** The pane wobbles: one more tap will do it. */
+  wobble(now: number): void;
   frame(now: number): FxFrame;
   drawFlash(ctx: CanvasRenderingContext2D, now: number): void;
   /** Length of the last shake, ms (0 under reduced motion). */
@@ -58,6 +71,7 @@ export function createFx(rng: Rng): Fx {
   let shakeS = 0;
   let shakeMs = 0;
   let slowAt = -Infinity;
+  let wobbleStart = -Infinity;
   let flashAt = -Infinity;
   let fx = 0;
   let fy = 0;
@@ -78,11 +92,15 @@ export function createFx(rng: Rng): Fx {
       shakeMs = SHAKE_MS;
       if (firstThisSession()) slowAt = now;
     },
+    wobble(now) {
+      if (!reduced.matches) wobbleStart = now;
+    },
     frame(now) {
       const motion = !reduced.matches;
       const amp = motion ? shakeAmp(now - shakeAt, shakeS) : 0;
+      const w = motion ? wobbleAt(now - wobbleStart) : 0;
       return {
-        dx: amp ? (rng.next() * 2 - 1) * amp : 0,
+        dx: (amp ? (rng.next() * 2 - 1) * amp : 0) + w,
         dy: amp ? (rng.next() * 2 - 1) * amp : 0,
         scale: motion ? timeScaleAt(now - slowAt) : 1,
       };
@@ -102,6 +120,10 @@ export function createFx(rng: Rng): Fx {
     get shakeMs() {
       return shakeMs;
     },
-    busy: (now) => now - flashAt < FLASH_MS || now - shakeAt < SHAKE_MS || now - slowAt < SLOWMO_MS,
+    busy: (now) =>
+      now - flashAt < FLASH_MS ||
+      now - shakeAt < SHAKE_MS ||
+      now - slowAt < SLOWMO_MS ||
+      now - wobbleStart < WOBBLE_MS,
   };
 }

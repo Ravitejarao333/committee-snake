@@ -97,4 +97,18 @@ describe("shatter", () => {
     const c = crackAt(at(HITS, 0), 0.7, 42, b);
     expect(shatter(c, b, 48, 0.7)).toEqual(shatter(c, b, 48, 0.7));
   });
+
+  it("makes bigger shards near the hit than far from it", () => {
+    for (const b of PANES)
+      for (let seed = 1; seed <= 12; seed++) {
+        const hit = { x: b.w / 2, y: b.h / 2 };
+        const shards = shatter(crackAt(hit, 0.2, seed, b), b, 48, 0.2);
+        const d = (x: Shard): number => Math.hypot(x.cx - hit.x, x.cy - hit.y);
+        const sorted = [...shards].sort((p, q) => d(p) - d(q));
+        const third = Math.floor(sorted.length / 3);
+        const mean = (xs: Shard[]): number => xs.reduce((s, x) => s + x.area, 0) / xs.length;
+        expect(shards.length).toBeGreaterThan(24);
+        expect(mean(sorted.slice(0, third))).toBeGreaterThan(1.5 * mean(sorted.slice(-third)));
+      }
+  });
 });

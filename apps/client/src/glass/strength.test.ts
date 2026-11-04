@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { FLICK_SHATTER, type HitInput, HOLD_SHATTER_MS, MoveTrack, strength } from "./strength";
+import { type HitInput, MoveTrack, strength } from "./strength";
+import { BASE_STRENGTH, FLICK_FULL, HOLD_FULL_MS, TAP_MS } from "./tuning";
 
-const BASE: HitInput = { approach: 0, heldMs: 0, area: 0, pressure: 0.5, flick: 0, diag: 800 };
+const BASE: HitInput = { approach: 0, heldMs: 0, flick: 0, diag: 800 };
 const at = (o: Partial<HitInput>): number => strength({ ...BASE, ...o });
 
 function monotone(f: (v: number) => number, vs: number[]): void {
@@ -10,39 +11,26 @@ function monotone(f: (v: number) => number, vs: number[]): void {
 }
 
 describe("hit strength", () => {
+  it("makes a plain tap the base hit", () => {
+    expect(at({})).toBeCloseTo(BASE_STRENGTH);
+    expect(at({ heldMs: TAP_MS })).toBeCloseTo(BASE_STRENGTH);
+    expect(at({ heldMs: 90 })).toBeCloseTo(BASE_STRENGTH);
+  });
+
   it("grows with mouse swing speed", () => {
     monotone((v) => at({ approach: v }), [0, 200, 800, 1600, 2400, 5000]);
     expect(at({ approach: 2400 })).toBe(1);
-    expect(at({ approach: 0 })).toBeCloseTo(0.2);
   });
 
-  it("grows with press duration and touch contact area", () => {
+  it("grows with press duration and with flick speed while down", () => {
     monotone((v) => at({ heldMs: v }), [0, 50, 150, 300, 450, 900]);
-    monotone((v) => at({ area: v }), [0, 400, 900, 2500, 4900, 10_000]);
-    expect(at({ heldMs: HOLD_SHATTER_MS })).toBe(1);
-    expect(at({ flick: FLICK_SHATTER * BASE.diag })).toBe(1);
-  });
-
-  it("ignores the 0.5 default pressure but uses real pressure", () => {
-    expect(at({ pressure: 0.5 })).toBe(at({ pressure: 0 }));
-    monotone((v) => at({ pressure: v }), [0.1, 0.3, 0.7, 0.9, 1]);
-    expect(at({ pressure: 0.9 })).toBeGreaterThan(at({ pressure: 0.5 }));
-  });
-
-  it("never shatters on contact size or pressure alone", () => {
-    expect(at({ pressure: 1 })).toBeLessThan(0.75);
-    expect(at({ area: 100_000, pressure: 1 })).toBeLessThan(0.75);
-    expect(at({ pressure: 1, heldMs: HOLD_SHATTER_MS })).toBe(1);
+    monotone((v) => at({ flick: v }), [0, 100, 500, 1000, 2000, 4000]);
+    expect(at({ heldMs: HOLD_FULL_MS })).toBe(1);
+    expect(at({ flick: FLICK_FULL * BASE.diag })).toBe(1);
   });
 
   it("stays within 0..1 for any input", () => {
-    for (const o of [
-      { approach: 1e9 },
-      { heldMs: -5 },
-      { area: -1 },
-      { pressure: 7 },
-      { flick: 1e9, diag: 0 },
-    ]) {
+    for (const o of [{ approach: 1e9 }, { heldMs: -5 }, { flick: 1e9, diag: 0 }]) {
       const s = at(o);
       expect(s).toBeGreaterThanOrEqual(0);
       expect(s).toBeLessThanOrEqual(1);

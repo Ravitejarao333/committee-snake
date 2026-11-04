@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   FLASH_MS,
   flashAlpha,
+  remnantAlpha,
   SHAKE_MS,
   SLOWMO_MS,
   SLOWMO_SCALE,
   shakeAmp,
   timeScaleAt,
+  wobbleAt,
 } from "./fx";
+import { REMNANT_MS, WOBBLE_MS } from "./tuning";
 
 describe("glass fx envelopes", () => {
   it("shakes up to 6 px times strength, decaying to nothing in 40 ms", () => {
@@ -31,5 +34,20 @@ describe("glass fx envelopes", () => {
     expect(flashAlpha(0)).toBeGreaterThan(0.8);
     expect(flashAlpha(FLASH_MS / 2)).toBeLessThan(flashAlpha(0));
     expect(flashAlpha(FLASH_MS)).toBe(0);
+  });
+
+  it("wobbles 2–3 px and settles", () => {
+    const peak = Math.max(...Array.from({ length: WOBBLE_MS }, (_, t) => Math.abs(wobbleAt(t))));
+    expect(peak).toBeGreaterThanOrEqual(2);
+    expect(peak).toBeLessThanOrEqual(3);
+    expect(wobbleAt(WOBBLE_MS)).toBe(0);
+    expect(wobbleAt(-1)).toBe(0);
+  });
+
+  it("keeps the remnant in the frame for 1 s, then fades it", () => {
+    expect(remnantAlpha(0)).toBe(1);
+    expect(remnantAlpha(600)).toBe(1);
+    expect(remnantAlpha(REMNANT_MS - 50)).toBeLessThan(0.5);
+    expect(remnantAlpha(REMNANT_MS)).toBe(0);
   });
 });
