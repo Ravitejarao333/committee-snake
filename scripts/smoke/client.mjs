@@ -2,7 +2,7 @@
 // Client browser smoke test: drives headless Chrome over the DevTools Protocol (no deps).
 // 1. pnpm --filter @committee-snake/client dev        (serves http://localhost:5173)
 // 2. node scripts/smoke/client.mjs [url] [outDir]      (CHROME_PATH overrides the browser)
-// The hub at / (cards, live previews, links into each game) at 1366×768, 390×844@3× and reduced
+// The hub at / (title, icons, cards, live previews, links into each game) at 1366×768, 390×844@3× and reduced
 // motion. Then Snake at /snake: solo rounds at the same three, and a 3-seat hot-seat round at both
 // sizes: bars, Blame Screen, share PNG and copy. Screenshots and the PNG go to outDir.
 // Exits 1 on any failed check or console error/warning. Needs the dev-only `__hub`/`__cs` hooks.
@@ -251,6 +251,8 @@ async function load(cdp, sc) {
   await emulate(cdp, sc);
   await cdp.send("Page.navigate", { url: snakeUrl });
   await waitFor(cdp, "lobby", (s) => s.phase === "lobby");
+  const title = await evaluate(cdp, "document.title");
+  check(title === "Committee Snake · Cheap Thrills", `title "${title}"`);
   await evaluate(cdp, "document.fonts.ready.then(() => true)");
   await sleep(400);
 }
@@ -445,6 +447,7 @@ const HUB_SCENARIOS = [
   { name: "hub-390x844", ...MOBILE, reduced: false },
   { name: "hub-reduced-motion", ...DESKTOP, reduced: true },
 ];
+const STRAPLINE = "Small games. Big feelings. No sign-up.";
 const HOOKS = {
   snake: "Everyone votes. The snake dies. Someone gets blamed.",
   glass: "In case of boredom, break glass.",
@@ -469,7 +472,22 @@ async function hub(cdp, sc) {
       game: a.dataset.game, href: a.getAttribute("href"), title: a.querySelector("h2")?.textContent,
       hook: a.querySelector(".hook")?.textContent, playing: a.querySelector("[data-playing]")?.textContent })),
       footer: [...document.querySelectorAll("footer a")].map((a) => a.href),
+      title: document.title, h1: document.querySelector("h1")?.textContent,
+      strap: document.querySelector(".strapline")?.textContent,
       scrollW: document.documentElement.scrollWidth, innerW: innerWidth }))()`,
+  );
+  check(
+    page.title === "Cheap Thrills" && page.h1 === "Cheap Thrills" && page.strap === STRAPLINE,
+    `title, heading and strapline (${page.title} / ${page.h1} / ${page.strap})`,
+  );
+  const icons = await evaluate(
+    cdp,
+    `Promise.all(["/favicon.svg", "/favicon.ico", "/apple-touch-icon.png", "/og/hub.png"].map((p) =>
+      fetch(p).then((r) => \`\${p} \${r.status} \${r.headers.get("content-type")}\`)))`,
+  );
+  check(
+    icons.every((l) => / 200 image\//.test(l)),
+    `icons and OG card are served as images (${icons.join(", ")})`,
   );
   const games = page.cards.map((c) => `${c.game}:${c.href}`).join(" ");
   check(games === "snake:/snake glass:/glass", `two cards link into the games (${games})`);

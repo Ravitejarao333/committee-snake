@@ -279,6 +279,8 @@ async function share(cdp, sc) {
 async function run(cdp, sc) {
   await emulate(cdp, sc);
   await load(cdp);
+  const title = await evaluate(cdp, "document.title");
+  check(title === "Break Glass · Cheap Thrills", `title "${title}"`);
   let s = await glass(cdp);
   check(
     s.paneSeed === 1234 && s.hint && s.count === "0",
